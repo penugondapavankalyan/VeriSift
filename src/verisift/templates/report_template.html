@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeriSift Comparison Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f0ece3; 
+            --surface: #faf8f4; 
+            --surface2: #f5f1e8; 
+            --border: #e0dbd0;
+            --text: #1a1814; 
+            --text2: #6b6860; 
+            --text3: #a3a096;
+            --accent: #c0392b; 
+            --green: #2e7d52; 
+            --violet: #7b1fa2; 
+            --amber: #b07d2a; 
+            --red: #c8483a; 
+            --blue: #2563a8;
+        }
+
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding-top: 100px; 
+            line-height: 1.5;
+        }
+
+        .hdr { 
+            position: fixed; top: 0; width: 100%; height: 90px; 
+            background: var(--surface); border-bottom: 1px solid var(--border); 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 0 40px; z-index: 1000; 
+        }
+        .hdr-left .eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text3); margin-bottom: 4px; }
+        .hdr-left .title { font-size: 22px; font-weight: 700; color: var(--text); }
+        .hdr-left .meta { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+        .hdr-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+
+        .dl-btn { display: flex; align-items: center; gap: 7px; padding: 8px 14px; background: var(--text); color: var(--surface); border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s; text-decoration: none; }
+        .dl-btn:hover { background: #000; transform: translateY(-1px); }
+        .dl-btn svg { width: 16px; height: 16px; }
+
+        .overall-pill { text-align: right; border-left: 2px solid var(--border); padding-left: 30px; }
+        .overall-num { font-size: 36px; font-weight: 800; color: var(--amber); line-height: 1; }
+        .overall-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text3); margin-top: 6px; }
+
+        .main { max-width: 1400px; margin: 40px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 24px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .card-hdr { padding: 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .card-hdr:hover { background: var(--surface2); }
+        .card-hdr-l { display: flex; align-items: center; gap: 20px; }
+        .card-icon { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; background: #fff; }
+        .card-title { font-size: 16px; font-weight: 700; }
+        .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        .card-body { padding: 30px; border-top: 1px solid var(--border); display: none; }
+        .card-body.vis { display: block; }
+
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .meta-col-hd { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .mr { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dotted var(--border); font-size: 13px; }
+        .mk { color: var(--text2); }
+        .mv { font-weight: 600; }
+
+        .params-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .sc { padding: 20px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); }
+        .sc-lbl { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; margin-bottom: 10px; }
+        .sc-val { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+        .sc-bar { height: 6px; background: rgba(0,0,0,0.06); border-radius: 12px; overflow: hidden; }
+        .sc-fill { height: 100%; border-radius: 10px; }
+        .bg-amber { background: var(--amber); }
+        .bg-blue { background: var(--blue); }
+        .bg-green { background: var(--green); }
+        .bg-violet { background: var(--violet); }
+
+        .hm-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+        .hm-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+        .hm-block { width: 54px; height: 54px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: white; transition: transform 0.2s; }
+        .hm-block:hover { transform: scale(1.1); }
+        .hm-pg { font-size: 13px; color: var(--text3); }
+        .hg { background: var(--green); } 
+        .ha { background: var(--amber); } 
+        .hr { background: var(--red); }
+
+        .pg-section { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; background: var(--surface); overflow: hidden; }
+        .pg-hdr { padding: 16px 20px; display: flex; align-items: center; cursor: pointer; }
+        .pg-num-tag { background: var(--text); color: #fff; padding: 10px 18px; border-radius: 48px; font-size: 11px; font-weight: 800; margin-right: 15px; }
+        .pg-title { flex-grow: 1; font-size: 14px; font-weight: 700; }
+        .pg-body { display: none; padding: 25px; border-top: 1px solid var(--border); background: #fff; }
+        .pg-body.vis { display: block; }
+
+        .badge-group { display: flex; gap: 8px; }
+        .badge { padding: 4px 15px; border-radius: 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .b-text { background: #e1f0ff; color: #2563a8; }
+        .b-visual { background: #e6f4ea; color: #2e7d32; }
+        .b-semantic { background: #f6e0ff; color: #793894; }
+
+        .text-comparison-container { display: flex; border: 1px solid var(--border); border-radius: 6px; margin-top: 10px; overflow: hidden; width: 100%; }
+        .pane-column { flex: 1; background-color: #fff; min-width: 0; border-right: 1px solid var(--border); }
+        .pane-column:last-child { border-right: none; }
+        .pane-header { background: #f8f9fa; padding: 8px 12px; font-size: 12px; font-weight: bold; border-bottom: 1px solid var(--border); color: #666; }
+        .pane-content { padding: 15px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; min-height: 200px; }
+
+        .diff_add em { background-color: #acf2bd !important; font-style: normal; font-weight: bold; color: #1a7f37; }
+        .diff_sub em { background-color: #fdb8c0 !important; font-style: normal; font-weight: bold; text-decoration: line-through; color: #cf222e; }
+        .diff_chg em { background-color: #fce788 !important; color: #9a6700; font-style: normal; font-weight: 700; }
+        .diff_semantic { background-color: #f3e5f5 !important; color: #7b1fa2; border-bottom: 2px solid #9c27b0; font-weight: 600; }
+
+        .tog-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        .tog-btn { padding: 8px 16px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; border-radius: 36px; }
+        .tog-btn.on { background: var(--text); color: #fff; border-color: var(--text); }
+
+        .diff-panel { display: none; }
+        .diff-panel.vis { display: block; }
+
+        .vpair { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .vcol-hd { font-size: 10px; font-weight: 800; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; text-align: center; }
+        .pg-prev { background: #fff; border: 1px solid var(--border); padding: 10px; border-radius: 4px; }
+        .pg-prev img { width: 100%; height: auto; display: block; }
+    </style>
+</head>
+<body>
+
+<header class="hdr">
+    <div class="hdr-left">
+        <div class="eyebrow">VeriSift Engine · Comparison Report</div>
+        <div class="title">VeriSift Analysis Report</div>
+        <div class="meta">Run ID: {{ run_id }} &nbsp;·&nbsp; Processed: {{ timestamp }}</div>
+    </div>
+    <div class="hdr-right">
+        <button class="dl-btn" onclick="downloadReport()">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 3v10M6 9l4 4 4-4"></path><path d="M3 15v1a2 2 0 002 2h10a2 2 0 002-2v-1"></path>
+            </svg>
+            Download report
+        </button>
+        <div class="overall-pill">
+            <div class="overall-num">{{ report.overall_score }}%</div>
+            <div class="overall-lbl">Overall Match</div>
+        </div>
+    </div>
+</header>
+
+<main class="main">
+    <div class="card">
+        <div class="card-hdr" onclick="toggleCard(this)">
+            <div class="card-hdr-l">
+                <div class="card-icon">📄</div>
+                <div>
+                    <div class="card-title">Document Metadata</div>
+                    <div class="card-sub">Comparative file properties and ingestion details</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body vis">
+            <div class="meta-grid">
+                <div>
+                    <div class="meta-col-hd">Baseline (Expected)</div>
+                    <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.expected.filename }}</span></div>
+                    <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.expected.filesize }}</span></div>
+                    <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.expected.pages }}</span></div>
+                    <div class="mr"><span class="mk">Creator</span><span class="mv">{{ metadata_comparison.expected.creator }}</span></div>
+                </div>
+                <div>
+                    <div class="meta-col-hd">Target (Actual)</div>
+                    <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.actual.filename }}</span></div>
+                    <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.actual.filesize }}</span></div>
+                    <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.actual.pages }}</span></div>
+                    <div class="mr"><span class="mk">Creator</span><span class="mv">{{ metadata_comparison.actual.creator }}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-hdr" onclick="toggleCard(this)">
+            <div class="card-hdr-l">
+                <div class="card-icon">⚙️</div>
+                <div>
+                    <div class="card-title">Comparison Parameters</div>
+                    <div class="card-sub">Confidence scores and page-wise heatmap distribution</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body vis">
+            <div class="params-grid">
+                <div class="sc">
+                    <div class="sc-lbl">Overall Match</div>
+                    <div class="sc-val">{{ report.overall_score }}%</div>
+                    <div class="sc-bar"><div class="sc-fill bg-amber" style="width: {{ report.overall_score }}%"></div></div>
+                </div>
+                <div class="sc">
+                    <div class="sc-lbl">Text Accuracy</div>
+                    <div class="sc-val">{{ text_score_avg }}%</div>
+                    <div class="sc-bar"><div class="sc-fill bg-blue" style="width: {{ text_score_avg }}%"></div></div>
+                </div>
+                <div class="sc">
+                    <div class="sc-lbl">Visual Accuracy</div>
+                    <div class="sc-val">{{ visual_score_avg }}%</div>
+                    <div class="sc-bar"><div class="sc-fill bg-green" style="width: {{ visual_score_avg }}%"></div></div>
+                </div>
+                {% if report.intent_score_avg is not none %}
+                    <div class="sc">
+                        <div class="sc-lbl">Semantic Match</div>
+                        <div class="sc-val">{{ intent_score_avg }}%</div>
+                        <div class="sc-bar"><div class="sc-fill bg-violet" style="width: {{ intent_score_avg }}%"></div></div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div style="margin-top: 30px;">
+                <div class="meta-col-hd">Per-Page Distribution Heatmap</div>
+                <div class="hm-row">
+                    {% for page in report.pages %}
+                        {% if page.visual_score is not none %}
+                            {% set page_avg = ((page.text_score + (page.visual_score )) / 2 * 100) | round(2) %}
+                        {% else %}
+                            {% set page_avg = (page.text_score * 100) | round(2) %}
+                        {% endif %}
+                    {% set hm_class = 'hg' if page_avg >= 95 else 'ha' if page_avg >= 80 else 'hr' %}
+                    <div class="hm-cell" onclick="jumpToPage('pg-{{ loop.index }}')">
+                        <div class="hm-block {{ hm_class }}">
+                            {{ page_avg }}%
+                        </div>
+                        <div class="hm-pg"> Pg {{ loop.index }} </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-hdr" onclick="toggleCard(this)">
+            <div class="card-hdr-l">
+                <div class="card-icon">🔍</div>
+                <div>
+                    <div class="card-title">Page-Wise Detail Analysis</div>
+                    <div class="card-sub">Deep dive into text and visual differences</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body vis">
+            {% for page in report.pages %}
+            <div class="pg-section" id="pg-{{ loop.index }}">
+                <div class="pg-hdr" onclick="togglePage(this)">
+                    <span class="pg-num-tag">PG {{ loop.index }}</span>
+                    <span class="pg-title">Analysis of Page Content</span>
+                    <div class="badge-group">
+                        <span class="badge b-text">{{ (page.text_score * 100) | round(2) }}% Text</span>
+                        {% if page.visual_score is not none %}
+                            <span class="badge b-visual">{{ (page.visual_score * 100) | round(2) }}% Visual</span>
+                        {% endif %}
+                        {% if page.intent_score is not none %}
+                            <span class="badge b-semantic">{{ (page.intent_score * 100) | round(2) }}% Semantic</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="pg-body">
+                    <div class="tog-bar">
+                        <button class="tog-btn on" onclick="switchTab(this, 't{{loop.index}}')">Text Diff</button>
+                        {% if page.heatmap_base64 %}
+                        <button class="tog-btn" onclick="switchTab(this, 'v{{loop.index}}')">Visual Heatmap</button>
+                        {% endif %}
+                        {% if page.semantic_diff_expected_html %}
+                        <button class="tog-btn" onclick="switchTab(this, 's{{loop.index}}')">Semantic Diff</button>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="t{{loop.index}}" class="diff-panel vis">
+                        <div class="text-comparison-container">
+                            <div class="pane-column">
+                                <div class="pane-header">Expected Text</div>
+                                <div class="pane-content">{{ page.expected_diff_html | safe }}</div>
+                            </div>
+                            <div class="pane-column">
+                                <div class="pane-header">Actual Text</div>
+                                <div class="pane-content">{{ page.actual_diff_html | safe }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if page.heatmap_base64 %}
+                    <div id="v{{loop.index}}" class="diff-panel">
+                        <div class="vpair">
+                            <div><div class="vcol-hd">Baseline</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.expected_image_base64 }}"></div></div>
+                            <div><div class="vcol-hd">Target</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.actual_image_base64 }}"></div></div>
+                            <div><div class="vcol-hd">Heatmap</div><div class="pg-prev heat-prev"><img src="data:image/png;base64,{{ page.heatmap_base64 }}"></div></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if page.semantic_diff_expected_html %}
+                    <div id="s{{loop.index}}" class="diff-panel">
+                        <div class="text-comparison-container">
+                            <div class="pane-column">
+                                <div class="pane-header" style="background: #f3e5f5;">Baseline (Semantic View)</div>
+                                <div class="pane-content">{{ page.semantic_diff_expected_html | safe }}</div>
+                            </div>
+                            <div class="pane-column">
+                                <div class="pane-header" style="background: #f3e5f5;">Target (Semantic View)</div>
+                                <div class="pane-content">{{ page.semantic_diff_actual_html | safe }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div> </div> {% endfor %}
+        </div>
+    </div>
+</main>
+
+<script>
+    function toggleCard(hdr) {
+        hdr.nextElementSibling.classList.toggle('vis');
+    }
+
+    function togglePage(hdr) {
+        hdr.nextElementSibling.classList.toggle('vis');
+    }
+
+    function switchTab(btn, showId) {
+        const parent = btn.parentElement;
+        const container = parent.closest('.pg-body');
+        
+        // Update button states
+        parent.querySelectorAll('.tog-btn').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        
+        // Hide all panels in this specific page section
+        container.querySelectorAll('.diff-panel').forEach(p => p.classList.remove('vis'));
+        
+        // Show target
+        const target = container.querySelector('#' + showId);
+        if (target) target.classList.add('vis');
+    }
+
+    function jumpToPage(id) {
+        const el = document.getElementById(id);
+        if(el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const pgBody = el.querySelector('.pg-body');
+            if (pgBody) pgBody.classList.add('vis');
+        }
+    }
+
+    function downloadReport() {
+        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Verisift_Report_{{ run_id }}.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>
