@@ -53,7 +53,7 @@ class ComparisonReport:
 
     # OVerall matching score
     overall_score: float = 0.0
-    # Intent matching score
+    
     
     # --- Global Summary Statistics ---
     # Why: Great for a "Dashboard" view in the UI (e.g. "8/10 pages passed")
@@ -61,5 +61,8 @@ class ComparisonReport:
     passed_pages: int = 0
     failed_pages: int = 0
     
+    # Intent matching score
+    avg_intent_score: Optional[float] = None
+
     # Metadata about the environment
     metadata: Dict[str, Any] = field(default_factory=lambda: {"actual": {}, "expected": {}})

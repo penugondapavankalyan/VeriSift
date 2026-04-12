@@ -24,11 +24,7 @@ class VerisiftConfig:
     # Exclusions
     # list: Uses Regex patterns to strip dynamic text (dates, IDs) before comparison
     ignore_patterns_flag: bool = field(default=False) # checks for the flag initially to proceed with exclusions
-    ignore_patterns: List[str] = field(default_factory=lambda: [
-        r"\d{2}/\d{2}/\d{4}",      # Ignore standard dates
-        r"Page \d+ of \d+",        # Ignore page numbers
-        r"Generated on: .*"        # Ignore timestamps
-    ])
+    ignore_patterns: List[str] = field(default_factory= list) # List is empty by default
 
     # Path to poppler - if the user has poppler in different path, then the config vairable can be updated in order to let the code pick the poppler
     poppler_path: str = r"C:\Program Files\poppler\Library\bin"
@@ -43,8 +39,8 @@ class VerisiftConfig:
     enable_visual: bool = True
 
     # "Sensitivity Dial" - settings that control the sematic comparison behaviour
-    semantic_threshold: float = 0.92  # High precision for Legal, Contracts, Official documents
-    semantic_max_phrase: int = 5      # Check for rephrased multi-word terms, this decides the length of the phrase that the semantic compare applies
+    semantic_threshold: float = 0.5  # High precision for Legal, Contracts, Official documents
+    semantic_max_phrase: int = 20      # Check for rephrased multi-word terms, this decides the length of the phrase that the semantic compare applies
     enable_intent_summary: bool = True # Flag for the "Overall Page Meaning" check
 
     # OCR Logic

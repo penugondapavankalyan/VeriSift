@@ -40,65 +40,6 @@ def _run_semantic_comparison(text_a, text_b):
     return util.pytorch_cos_sim(emb1, emb2).item()
 
 
-
-# def _generate_dual_pane_html(text_expected, text_actual):
-    
-#     try:
-#         dmp = diff_match_patch()    
-#         diffs = dmp.diff_main(text_expected, text_actual)
-#         dmp.diff_cleanupSemantic(diffs)
-        
-#         expected_side = []
-#         actual_side = []
-        
-#         for (flag, data) in diffs:
-#             # Escape HTML and convert newlines to breaks
-#             clean_data = data.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
-            
-#             if flag == 0: # Equal
-#                 expected_side.append(f"<span>{clean_data}</span>")
-#                 actual_side.append(f"<span>{clean_data}</span>")
-#             elif flag == -1: # Delete (Only in Expected)
-#                 expected_side.append(f'<span class="diff_sub"><em>{clean_data}</em></span>')
-#                 # Placeholder to keep horizontal alignment
-#                 actual_side.append(f'<span style="visibility:hidden">{clean_data}</span>')
-#             elif flag == 1: # Insert (Only in Actual)
-#                 expected_side.append(f'<span style="visibility:hidden">{clean_data}</span>')
-#                 actual_side.append(f'<span class="diff_add"><em>{clean_data}</em></span>')
-                
-#         return "".join(expected_side), "".join(actual_side)
-
-#     except Exception as e:
-#         logger.error(f"Error generating dual-pane HTML: {e}")
-#         return "", ""
-
-
-# def compare_text(text_a: str, text_b: str, config: VerisiftConfig):
-#     """
-#     Detailed Explanation:
-#     The Router. It checks the config and decides which engine to fire up.
-#     """
-#     logger.info(f"Running text analysis in '{config.comparison_mode}' mode.")
-
-#     # 1. Routing Logic
-#     if config.comparison_mode == "semantic":
-#         score = _run_semantic_comparison(text_a, text_b)
-#     else:
-#         score = _run_literal_comparison(text_a, text_b)
-        
-#     # 2. Shared Logic
-#     # Generate the dual-pane HTML
-#     exp_html, act_html = _generate_dual_pane_html(text_a, text_b)
-
-#     return {
-#         "score": round(score, 4),
-#         "is_match": score >= config.text_threshold,
-#         "expected_diff_html": exp_html, # New keys for the template
-#         "actual_diff_html": act_html,
-#         "mode_used": config.comparison_mode
-#     }
-
-
 def _generate_diff_html(text_expected, text_actual, config: VerisiftConfig, use_semantic=False):
     """
     Core HTML Generator.
@@ -126,37 +67,65 @@ def _generate_diff_html(text_expected, text_actual, config: VerisiftConfig, use_
                         to_compare_act.append(diffs[i+1][1].strip())
                         pair_indices.append(i)
 
+
             if to_compare_exp:
                 emb_exp = model.encode(to_compare_exp, convert_to_tensor=True)
                 emb_act = model.encode(to_compare_act, convert_to_tensor=True)
                 scores = torch.nn.functional.cosine_similarity(emb_exp, emb_act)
+
                 for idx, score in enumerate(scores):
                     if score >= config.semantic_threshold:
                         semantic_matches.add(pair_indices[idx])
                         semantic_matches.add(pair_indices[idx] + 1)
+                
 
 
         expected_side, actual_side = [], []
-        for i, (flag, data) in enumerate(diffs):
+        skip_indices = set()
+
+        for i in range(len(diffs)):
+            if i in skip_indices:
+                continue
+
+            flag, data = diffs[i]
             clean_data = data.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
             
-            if i in semantic_matches:
-                tag = f'<span class="diff_semantic">{clean_data}</span>'
-                expected_side.append(tag)
-                actual_side.append(tag)
-            elif flag == 0:
+            # --- 1. THE SEMANTIC PRIORITY ---
+            # If this is a deletion that is part of a semantic pair
+            if use_semantic and i in semantic_matches and flag == -1:
+                match_found = False
+                # Look ahead up to 5 chunks to find the corresponding addition
+                for j in range(i + 1, min(i + 6, len(diffs))):
+                    if j in semantic_matches and diffs[j][0] == 1:
+                        partner_data = diffs[j][1].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
+                        
+                        # Apply Violet to both sides
+                        expected_side.append(f'<span class="diff_semantic">{clean_data}</span>')
+                        actual_side.append(f'<span class="diff_semantic">{partner_data}</span>')
+                        
+                        skip_indices.add(j)
+                        match_found = True
+                        break
+                
+                if match_found:
+                    continue
+
+            # --- 2. THE LITERAL FALLBACK ---
+            if flag == 0:  # No change
                 tag = f"<span>{clean_data}</span>"
                 expected_side.append(tag)
                 actual_side.append(tag)
-            elif flag == -1:
+            elif flag == -1:  # True Error / Deletion (Red)
                 expected_side.append(f'<span class="diff_sub"><em>{clean_data}</em></span>')
                 actual_side.append(f'<span style="visibility:hidden">{clean_data}</span>')
-            elif flag == 1:
+            elif flag == 1:  # True Error / Addition (Green)
                 expected_side.append(f'<span style="visibility:hidden">{clean_data}</span>')
                 actual_side.append(f'<span class="diff_add"><em>{clean_data}</em></span>')
-        
-                
+
         return "".join(expected_side), "".join(actual_side)
+
+
+
     
     except Exception as e:
         logger.error(f"Error generating HTML: {e}")
@@ -172,7 +141,7 @@ def compare_text(text_a: str, text_b: str, config: VerisiftConfig):
 
     # 1. Scores
     lit_score = _run_literal_comparison(text_a, text_b)
-    sem_score = _run_semantic_comparison(text_a, text_b) if config.comparison_mode == "semantic" else 0.0
+    sem_score = _run_semantic_comparison(text_a, text_b) if config.comparison_mode == "semantic" else None
     
     # primary_score = sem_score if config.comparison_mode == "semantic" else lit_score
 
@@ -195,9 +164,13 @@ def compare_text(text_a: str, text_b: str, config: VerisiftConfig):
 
     # 4. Conditionally populate Semantic HTML (for the dedicated Semantic tab)
     if config.comparison_mode == "semantic":
-        sem_exp_html, sem_act_html = _generate_diff_html(text_a, text_b, config, use_semantic=True)
-        result["semantic_diff_expected_html"] = sem_exp_html
-        result["semantic_diff_actual_html"] = sem_act_html
-        # result["intent_score"] = round(sem_score * 100, 2)
+        try:
+            logger.info("generating semantic differences...")
+            sem_exp_html, sem_act_html = _generate_diff_html(text_a, text_b, config, use_semantic=True)
+            result["semantic_diff_expected_html"] = sem_exp_html
+            result["semantic_diff_actual_html"] = sem_act_html
+            logger.info("generating semantic differences complete...")
+        except Exception as e:
+            logger.error(f"Error while generating semantic differences......{e}")
 
     return result

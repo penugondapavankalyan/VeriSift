@@ -75,12 +75,15 @@ if __name__ == "__main__":
     ACTUAL3 = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Modern_Warfare_Technology_actual.pdf"
     EXPECTED3 = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Modern_Warfare_Technology.pdf"
     semantic_actual = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_semantic.pdf"
+    actual_semantic = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_semantic_actual.pdf"
+    expected_semantic = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_semantic_expected.pdf"
 
     output_dir = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift"
     report_name = "test_report.html"
-    # semantic_compare = True
-    semantic_compare = False
-    run_local_audit(ACTUAL1, EXPECTED, semantic_compare, output_dir, report_name)
+    semantic_compare = True
+    # semantic_compare = False
+    # run_local_audit(ACTUAL1, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(semantic_actual, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(EXPECTED, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(ACTUAL3, EXPECTED3, semantic_compare, output_dir, report_name)
+    run_local_audit(actual_semantic, expected_semantic, semantic_compare, output_dir, report_name)

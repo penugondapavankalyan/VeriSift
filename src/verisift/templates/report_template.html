@@ -20,6 +20,7 @@
             --amber: #b07d2a; 
             --red: #c8483a; 
             --blue: #2563a8;
+            --white: #fff;
         }
 
         * { box-sizing: border-box; }
@@ -59,9 +60,17 @@
         .card-hdr-l { display: flex; align-items: center; gap: 20px; }
         .card-icon { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; background: #fff; }
         .card-title { font-size: 16px; font-weight: 700; }
+        .card-arrow { 
+            transition: transform 0.3s ease; 
+            color: var(--text3);
+        }
+        .card.expanded .card-arrow { transform: rotate(180deg); }
         .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
         .card-body { padding: 30px; border-top: 1px solid var(--border); display: none; }
         .card-body.vis { display: block; }
+        .legend-bar { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+        .li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+        .ld { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
         .meta-col-hd { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
@@ -112,6 +121,30 @@
         .diff_sub em { background-color: #fdb8c0 !important; font-style: normal; font-weight: bold; text-decoration: line-through; color: #cf222e; }
         .diff_chg em { background-color: #fce788 !important; color: #9a6700; font-style: normal; font-weight: 700; }
         .diff_semantic { background-color: #f3e5f5 !important; color: #7b1fa2; border-bottom: 2px solid #9c27b0; font-weight: 600; }
+        .diff_semantic { background-color: #f3e5f5 !important; color: #4a148c !important; border-bottom: 2px solid #ab47bc; padding: 0 2px; border-radius: 2px; font-weight: 600; font-style: normal; }
+
+        /* FORCE visibility for all types in Semantic Mode */
+        [id^="s"] .diff_sub em, 
+        [id^="s"] .diff_add em,
+        [id^="s"] .diff_semantic { display: inline !important; visibility: visible !important; opacity: 1 !important; }
+
+        /* Amber highlight for ignored/excluded patterns */
+.diff_excluded {
+    background-color: #fff8e1 !important; /* Light Amber/Yellow */
+    color: #ff8f00 !important;           /* Darker Amber text */
+    border: 1px dashed #ffb300;          /* Dashed border to show it's 'ignored' */
+    padding: 0 2px;
+    border-radius: 2px;
+    font-family: monospace;              /* Makes technical data look distinct */
+    cursor: help;                        /* Shows the user they can hover for info */
+}
+
+/* Optional: Add a tooltip effect so they know which regex caught it */
+.diff_excluded:hover::after {
+    content: " (Excluded by Pattern)";
+    font-size: 10px;
+    color: #666;
+}
 
         .tog-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         .tog-btn { padding: 8px 16px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; border-radius: 36px; }
@@ -158,18 +191,23 @@
                     <div class="card-sub">Comparative file properties and ingestion details</div>
                 </div>
             </div>
+            <div class="card-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
         </div>
-        <div class="card-body vis">
+        <div class="card-body">
             <div class="meta-grid">
                 <div>
-                    <div class="meta-col-hd">Baseline (Expected)</div>
+                    <div class="meta-col-hd">Expected / Baseline docment </div>
                     <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.expected.filename }}</span></div>
                     <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.expected.filesize }}</span></div>
                     <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.expected.pages }}</span></div>
                     <div class="mr"><span class="mk">Creator</span><span class="mv">{{ metadata_comparison.expected.creator }}</span></div>
                 </div>
                 <div>
-                    <div class="meta-col-hd">Target (Actual)</div>
+                    <div class="meta-col-hd">Actual / Target document </div>
                     <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.actual.filename }}</span></div>
                     <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.actual.filesize }}</span></div>
                     <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.actual.pages }}</span></div>
@@ -179,7 +217,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card expanded">
         <div class="card-hdr" onclick="toggleCard(this)">
             <div class="card-hdr-l">
                 <div class="card-icon">⚙️</div>
@@ -187,6 +225,11 @@
                     <div class="card-title">Comparison Parameters</div>
                     <div class="card-sub">Confidence scores and page-wise heatmap distribution</div>
                 </div>
+            </div>
+            <div class="card-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
             </div>
         </div>
         <div class="card-body vis">
@@ -206,11 +249,11 @@
                     <div class="sc-val">{{ visual_score_avg }}%</div>
                     <div class="sc-bar"><div class="sc-fill bg-green" style="width: {{ visual_score_avg }}%"></div></div>
                 </div>
-                {% if report.intent_score_avg is not none %}
+                {% if report.avg_intent_score is not none %}
                     <div class="sc">
                         <div class="sc-lbl">Semantic Match</div>
-                        <div class="sc-val">{{ intent_score_avg }}%</div>
-                        <div class="sc-bar"><div class="sc-fill bg-violet" style="width: {{ intent_score_avg }}%"></div></div>
+                        <div class="sc-val">{{ report.avg_intent_score }}%</div>
+                        <div class="sc-bar"><div class="sc-fill bg-violet" style="width: {{ report.avg_intent_score }}%"></div></div>
                     </div>
                 {% endif %}
             </div>
@@ -246,8 +289,22 @@
                     <div class="card-sub">Deep dive into text and visual differences</div>
                 </div>
             </div>
+            <div class="card-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
         </div>
-        <div class="card-body vis">
+        <div class="legend-bar">
+            <div class="li"><div class="ld" style="background:var(--white)"></div>Identical</div>
+            <div class="li"><div class="ld" style="background:var(--red);text-decoration:line-through"></div>Textual difference</div>
+            <div class="li"><div class="ld" style="background:var(--green)"></div>Textual difference</div>
+            <div class="li"><div class="ld" style="background:var(--amber);border:1px dashed var(--amber-border)"></div>Excluded (dynamic field)</div>
+            <div class="li"><div class="ld" style="background:var(--red);opacity: 0.3;"></div>Visual diff region</div>
+            <div class="li"><div class="ld" style="background:var(--violet)"></div>Semantic diff region</div>
+            <div class="li"><diff region</div>
+        </div>
+        <div class="card-body">
             {% for page in report.pages %}
             <div class="pg-section" id="pg-{{ loop.index }}">
                 <div class="pg-hdr" onclick="togglePage(this)">
@@ -266,12 +323,12 @@
                 
                 <div class="pg-body">
                     <div class="tog-bar">
-                        <button class="tog-btn on" onclick="switchTab(this, 't{{loop.index}}')">Text Diff</button>
+                        <button class="tog-btn on" onclick="switchTab(this, 't{{loop.index}}')">Textual Difference</button>
                         {% if page.heatmap_base64 %}
                         <button class="tog-btn" onclick="switchTab(this, 'v{{loop.index}}')">Visual Heatmap</button>
                         {% endif %}
                         {% if page.semantic_diff_expected_html %}
-                        <button class="tog-btn" onclick="switchTab(this, 's{{loop.index}}')">Semantic Diff</button>
+                        <button class="tog-btn" onclick="switchTab(this, 's{{loop.index}}')">Semantic Difference</button>
                         {% endif %}
                     </div>
                     
@@ -291,8 +348,8 @@
                     {% if page.heatmap_base64 %}
                     <div id="v{{loop.index}}" class="diff-panel">
                         <div class="vpair">
-                            <div><div class="vcol-hd">Baseline</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.expected_image_base64 }}"></div></div>
-                            <div><div class="vcol-hd">Target</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.actual_image_base64 }}"></div></div>
+                            <div><div class="vcol-hd">Expected / Baseline document</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.expected_image_base64 }}"></div></div>
+                            <div><div class="vcol-hd">Actual / Target document</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.actual_image_base64 }}"></div></div>
                             <div><div class="vcol-hd">Heatmap</div><div class="pg-prev heat-prev"><img src="data:image/png;base64,{{ page.heatmap_base64 }}"></div></div>
                         </div>
                     </div>
@@ -302,11 +359,12 @@
                     <div id="s{{loop.index}}" class="diff-panel">
                         <div class="text-comparison-container">
                             <div class="pane-column">
-                                <div class="pane-header" style="background: #f3e5f5;">Baseline (Semantic View)</div>
+                                <!-- <div class="pane-header" style="background: #f3e5f5;">Baseline (Semantic View)</div> -->
+                                <div class="pane-header" style="background: #ede7f6; color: #5e35b1; border-bottom: 1px solid #d1c4e9;">Expected / Base document (Semantic View)</div>
                                 <div class="pane-content">{{ page.semantic_diff_expected_html | safe }}</div>
                             </div>
                             <div class="pane-column">
-                                <div class="pane-header" style="background: #f3e5f5;">Target (Semantic View)</div>
+                                <div class="pane-header" style="background: #ede7f6; color: #5e35b1; border-bottom: 1px solid #d1c4e9;">Actual / Target document (Semantic View)</div>
                                 <div class="pane-content">{{ page.semantic_diff_actual_html | safe }}</div>
                             </div>
                         </div>
@@ -319,7 +377,9 @@
 
 <script>
     function toggleCard(hdr) {
-        hdr.nextElementSibling.classList.toggle('vis');
+        const card = hdr.closest('.card');
+        card.classList.toggle('expanded');
+        card.querySelector('.card-body').classList.toggle('vis');
     }
 
     function togglePage(hdr) {
@@ -345,9 +405,16 @@
     function jumpToPage(id) {
         const el = document.getElementById(id);
         if(el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Ensure the parent "Page-Wise Detail Analysis" card is expanded
+            const parentCard = el.closest('.card');
+            if (parentCard && !parentCard.classList.contains('expanded')) {
+                parentCard.classList.add('expanded');
+                parentCard.querySelector('.card-body').classList.add('vis');
+            }
+            // Expand the specific page body and scroll
             const pgBody = el.querySelector('.pg-body');
             if (pgBody) pgBody.classList.add('vis');
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 

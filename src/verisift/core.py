@@ -234,7 +234,11 @@ class Comparator:
             # Average of text and visual scores across all pages
             avg_text = sum(p.text_score for p in report.pages) / len(report.pages)
             avg_vis = sum(p.visual_score for p in report.pages) / len(report.pages)
-            report.avg_intent = sum(p.intent_score for p in report.pages) / len(report.pages)
+            if self.config.comparison_mode == "semantic":
+                report.avg_intent_score = round((sum(p.intent_score for p in report.pages) / len(report.pages))*100 , 2)
+            else:
+                report.avg_intent_score = None
+
             report.overall_score = round(((avg_text + avg_vis) / 2) * 100, 2)
 
             report.passed_pages = sum(1 for p in report.pages if p.text_match and p.visual_match)
@@ -244,5 +248,5 @@ class Comparator:
             report.overall_score = 0.0
 
         logger.info(f"Comparison Summary: {report.passed_pages}/{report.total_pages} pages passed.")
-        logger.info(f"Final Score: {report.overall_score}%")
+        logger.info(f"Overall Score: {report.overall_score}%")
         return report # Return the full data object 

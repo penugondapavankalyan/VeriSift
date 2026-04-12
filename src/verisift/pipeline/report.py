@@ -40,23 +40,18 @@ def generate_html_report(report: ComparisonReport, output_path: str):
         p.text_score = float(p.text_score)
         p.visual_score = float(p.visual_score)
 
-    # 2. Prepare Metadata for the "Document Metadata" card
-    # We create a dictionary that mimics the report.metadata structure
-    # def _get_pdf_page_count(pdf_path):
-    #         if not os.path.exists(pdf_path):
-    #             return 0
-    #         try:
-    #             return len(PdfReader(pdf_path).pages)
-    #         except Exception:
-    #             return 0
 
     def _get_pdf_properties(pdf_path):
         if not pdf_path or not os.path.exists(pdf_path):
             return {} # Return empty dict instead of None to simplify lookups
         try:
             # Use PdfReader metadata but convert to a standard dict for safety
-            meta = PdfReader(pdf_path).metadata
-            return meta if meta else {}
+            reader = PdfReader(pdf_path)
+            meta = reader.metadata
+            info = dict(meta) if meta else {}
+            # Extract page count from the reader itself, as it's not in metadata
+            info['page_count'] = len(reader.pages)
+            return info
         except Exception as e:
             logger.warning(f"Could not read metadata for {pdf_path}: {e}")
             return {}
@@ -70,13 +65,13 @@ def generate_html_report(report: ComparisonReport, output_path: str):
         "actual": {
             "filename": os.path.basename(report.actual_path),
             "filesize": f"{os.path.getsize(report.actual_path) / 1024:.1f} KB" if os.path.exists(report.actual_path) else "N/A",
-            "pages": actual_meta.get('/Pages', "N/A"),
+            "pages": actual_meta.get('page_count', "N/A"),
             "creator": actual_meta.get('/Creator', "N/A")
         },
         "expected": {
             "filename": os.path.basename(report.expected_path),
             "filesize": f"{os.path.getsize(report.expected_path) / 1024:.1f} KB" if os.path.exists(report.expected_path) else "N/A",
-            "pages": expected_meta.get('/Pages', "N/A"),
+            "pages": expected_meta.get('page_count', "N/A"),
             "creator": expected_meta.get('/Creator', "N/A")
         }
     }
