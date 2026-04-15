@@ -68,7 +68,8 @@
         .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
         .card-body { padding: 30px; border-top: 1px solid var(--border); display: none; }
         .card-body.vis { display: block; }
-        .legend-bar { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+        .legend-bar { display: flex; gap: 14px; flex-wrap: wrap; padding: 15px 24px; border-bottom: 1px solid var(--border); background: var(--surface2); width: 100%; }
+        .li { display: flex; align-items: center; gap: 5px}
         .li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
         .ld { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
@@ -98,12 +99,15 @@
         .ha { background: var(--amber); } 
         .hr { background: var(--red); }
 
-        .pg-section { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; background: var(--surface); overflow: hidden; }
-        .pg-hdr { padding: 16px 20px; display: flex; align-items: center; cursor: pointer; }
+        .pg-section { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; background: var(--surface); overflow: hidden; width: 100%; }
+        .pg-section:first-child { margin-top: 0}
+        .pg-section:last-child { margin-bottom: 0}
+        .pg-hdr { padding: 16px 20px; display: flex; align-items: center; cursor: pointer; width: 100%; justify-content: space-between;}
         .pg-num-tag { background: var(--text); color: #fff; padding: 10px 18px; border-radius: 48px; font-size: 11px; font-weight: 800; margin-right: 15px; }
         .pg-title { flex-grow: 1; font-size: 14px; font-weight: 700; }
         .pg-body { display: none; padding: 25px; border-top: 1px solid var(--border); background: #fff; }
         .pg-body.vis { display: block; }
+        .pg-hdr-left {display: flex; align-items: center; gap: 15px; min-width: 0; }
 
         .badge-group { display: flex; gap: 8px; }
         .badge { padding: 4px 15px; border-radius: 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -133,17 +137,22 @@
     background-color: #fff8e1 !important; /* Light Amber/Yellow */
     color: #ff8f00 !important;           /* Darker Amber text */
     border: 1px dashed #ffb300;          /* Dashed border to show it's 'ignored' */
-    padding: 0 2px;
-    border-radius: 2px;
+    padding: 2px 4px;
+    border-radius: 4px;
     font-family: monospace;              /* Makes technical data look distinct */
     cursor: help;                        /* Shows the user they can hover for info */
+    display: inline-block;
 }
 
-/* Optional: Add a tooltip effect so they know which regex caught it */
-.diff_excluded:hover::after {
-    content: " (Excluded by Pattern)";
-    font-size: 10px;
-    color: #666;
+/* Make the [IGNORED] text look like a small tag */
+.diff_excluded::after {
+    /* Optional: If you want to force the text via CSS instead of Python, 
+       you could use content: " [IGNORED]"; here instead of in sanitizer.py */
+    font-size: 0.75em;
+    font-weight: bold;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-left: 5px;
 }
 
         .tog-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
@@ -295,16 +304,17 @@
                 </svg>
             </div>
         </div>
-        <div class="legend-bar">
-            <div class="li"><div class="ld" style="background:var(--white)"></div>Identical</div>
-            <div class="li"><div class="ld" style="background:var(--red);text-decoration:line-through"></div>Textual difference</div>
-            <div class="li"><div class="ld" style="background:var(--green)"></div>Textual difference</div>
-            <div class="li"><div class="ld" style="background:var(--amber);border:1px dashed var(--amber-border)"></div>Excluded (dynamic field)</div>
-            <div class="li"><div class="ld" style="background:var(--red);opacity: 0.3;"></div>Visual diff region</div>
-            <div class="li"><div class="ld" style="background:var(--violet)"></div>Semantic diff region</div>
-            <div class="li"><diff region</div>
-        </div>
+
         <div class="card-body">
+            <div class="legend-bar">
+                <div class="li"><div class="ld" style="background:var(--white)"></div>Identical</div>
+                <div class="li"><div class="ld" style="background:var(--red);text-decoration:line-through"></div>Textual difference</div>
+                <div class="li"><div class="ld" style="background:var(--green)"></div>Textual difference</div>
+                <div class="li"><div class="ld" style="background:var(--amber);border:1px dashed var(--amber-border)"></div>Excluded (dynamic field)</div>
+                <div class="li"><div class="ld" style="background:var(--red);opacity: 0.3;"></div>Visual diff region</div>
+                <div class="li"><div class="ld" style="background:var(--violet)"></div>Semantic diff region</div>
+                <div class="li"><diff region</div>
+            </div>
             {% for page in report.pages %}
             <div class="pg-section" id="pg-{{ loop.index }}">
                 <div class="pg-hdr" onclick="togglePage(this)">
@@ -318,6 +328,11 @@
                         {% if page.intent_score is not none %}
                             <span class="badge b-semantic">{{ (page.intent_score * 100) | round(2) }}% Semantic</span>
                         {% endif %}
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
                     </div>
                 </div>
                 

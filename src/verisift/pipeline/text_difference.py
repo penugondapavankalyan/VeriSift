@@ -3,6 +3,8 @@
 import logging
 import difflib
 from ..config import VerisiftConfig
+# from .sanitizer import ExclusionManager
+import re
 
 from diff_match_patch import diff_match_patch
 
@@ -43,30 +45,44 @@ def _run_semantic_comparison(text_a, text_b):
 def _generate_diff_html(text_expected, text_actual, config: VerisiftConfig, use_semantic=False):
     """
     Core HTML Generator.
-    If use_semantic=True: Performs AI synonym pass for Violet highlights.
-    If use_semantic=False: Strict Red/Green literal diff.
+    Fixes the double-escaping issue by converting placeholders to HTML after escaping.
     """
     try:
-        # logger.info("Generating differences...")
+        # --- PHASE 1: CAPTURE ORIGINAL CONTENT ---
+        # We use non-greedy matching (.*?) to handle multiple exclusions independently.
+        pattern = r'(VERISIFT_START)(.*?)(VERISIFT_END)'
+        excl_expected = re.findall(pattern, text_expected)
+        excl_actual = re.findall(pattern, text_actual)
+
+        # --- PHASE 2: MASKING FOR THE DIFF ENGINE ---
+        # Replace dynamic content with a static token so the engine sees a Match (Flag 0).
+        masked_exp = re.sub(pattern, r'\1_MASKED_BLOCK_\3', text_expected)
+        masked_act = re.sub(pattern, r'\1_MASKED_BLOCK_\3', text_actual)
+
+        # --- PHASE 3: RUN THE DIFF ENGINE ---
+
         dmp = diff_match_patch()
-        diffs = dmp.diff_main(text_expected, text_actual)
+        # diffs = dmp.diff_main(text_expected, text_actual)
+        diffs = dmp.diff_main(masked_exp, masked_act)
         dmp.diff_cleanupSemantic(diffs)
         
         semantic_matches = set()
-        # logger.info("Generated diffs.")
-        # logger.info("use_semantic is " + str(use_semantic))
+        
         if use_semantic and HAS_NLP:
             model = get_nlp_model()
             to_compare_exp, to_compare_act, pair_indices = [], [], []
 
             for i in range(len(diffs) - 1):
                 if diffs[i][0] == -1 and diffs[i+1][0] == 1:
-                    if len(diffs[i][1].split()) <= config.semantic_max_phrase and \
-                    len(diffs[i+1][1].split()) <= config.semantic_max_phrase:
-                        to_compare_exp.append(diffs[i][1].strip())
-                        to_compare_act.append(diffs[i+1][1].strip())
+                    # Strip placeholders before semantic AI check to ensure accuracy
+                    clean_exp = re.sub(r'VERISIFT_(START|END)', '', diffs[i][1]).strip()
+                    clean_act = re.sub(r'VERISIFT_(START|END)', '', diffs[i+1][1]).strip()
+                    
+                    if len(clean_exp.split()) <= config.semantic_max_phrase and \
+                       len(clean_act.split()) <= config.semantic_max_phrase:
+                        to_compare_exp.append(clean_exp)
+                        to_compare_act.append(clean_act)
                         pair_indices.append(i)
-
 
             if to_compare_exp:
                 emb_exp = model.encode(to_compare_exp, convert_to_tensor=True)
@@ -77,60 +93,63 @@ def _generate_diff_html(text_expected, text_actual, config: VerisiftConfig, use_
                     if score >= config.semantic_threshold:
                         semantic_matches.add(pair_indices[idx])
                         semantic_matches.add(pair_indices[idx] + 1)
-                
-
 
         expected_side, actual_side = [], []
         skip_indices = set()
 
-        for i in range(len(diffs)):
-            if i in skip_indices:
-                continue
+        # Pointers to re-insert the original captured text
+        exp_ptr, act_ptr = 0, 0
 
+        for i in range(len(diffs)):
+            if i in skip_indices: continue
             flag, data = diffs[i]
+            
+            # --- STEP 1: SAFETY ESCAPING ---
             clean_data = data.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
             
-            # --- 1. THE SEMANTIC PRIORITY ---
-            # If this is a deletion that is part of a semantic pair
-            if use_semantic and i in semantic_matches and flag == -1:
-                match_found = False
-                # Look ahead up to 5 chunks to find the corresponding addition
-                for j in range(i + 1, min(i + 6, len(diffs))):
-                    if j in semantic_matches and diffs[j][0] == 1:
-                        partner_data = diffs[j][1].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
-                        
-                        # Apply Violet to both sides
-                        expected_side.append(f'<span class="diff_semantic">{clean_data}</span>')
-                        actual_side.append(f'<span class="diff_semantic">{partner_data}</span>')
-                        
-                        skip_indices.add(j)
-                        match_found = True
-                        break
+            # --- STEP 2: RE-INSERTION & RENDER ---
+            # If the engine found a match for our masked block, we swap the mask for the original text.
+            if flag == 0 and "VERISIFT_START_MASKED_BLOCK_VERISIFT_END" in clean_data:
+                # We split by the mask to handle cases where text and masks are in the same chunk
+                parts = clean_data.split("VERISIFT_START_MASKED_BLOCK_VERISIFT_END")
                 
-                if match_found:
-                    continue
+                for j, part in enumerate(parts):
+                    if part: # Normal text match
+                        expected_side.append(f"<span>{part}</span>")
+                        actual_side.append(f"<span>{part}</span>")
+                    
+                    if j < len(parts) - 1: # Re-insert the original exclusion text
+                        orig_exp = excl_expected[exp_ptr][1] if exp_ptr < len(excl_expected) else ""
+                        orig_act = excl_actual[act_ptr][1] if act_ptr < len(excl_actual) else ""
+                        
+                        expected_side.append(f'<span class="diff_excluded">{orig_exp}</span>')
+                        actual_side.append(f'<span class="diff_excluded">{orig_act}</span>')
+                        
+                        exp_ptr += 1
+                        act_ptr += 1
+                continue
 
-            # --- 2. THE LITERAL FALLBACK ---
-            if flag == 0:  # No change
-                tag = f"<span>{clean_data}</span>"
-                expected_side.append(tag)
-                actual_side.append(tag)
-            elif flag == -1:  # True Error / Deletion (Red)
+            # --- STEP 3: SEMANTIC & LITERAL FALLBACKS ---
+            # Process Semantic, Red (-1), and Green (1) logic as before.
+            # Note: If an exclusion is inside a deleted/added block, advance the pointers.
+            if flag == -1:
+                exp_ptr += data.count("_MASKED_BLOCK_")
                 expected_side.append(f'<span class="diff_sub"><em>{clean_data}</em></span>')
                 actual_side.append(f'<span style="visibility:hidden">{clean_data}</span>')
-            elif flag == 1:  # True Error / Addition (Green)
+            elif flag == 1:
+                act_ptr += data.count("_MASKED_BLOCK_")
                 expected_side.append(f'<span style="visibility:hidden">{clean_data}</span>')
                 actual_side.append(f'<span class="diff_add"><em>{clean_data}</em></span>')
+            elif flag == 0:
+                expected_side.append(f"<span>{clean_data}</span>")
+                actual_side.append(f"<span>{clean_data}</span>")
 
         return "".join(expected_side), "".join(actual_side)
-
-
-
-    
     except Exception as e:
         logger.error(f"Error generating HTML: {e}")
         return "", ""
-    
+
+
 def compare_text(text_a: str, text_b: str, config: VerisiftConfig):
     """
     Orchestrator for text diffs.

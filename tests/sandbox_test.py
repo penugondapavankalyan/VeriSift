@@ -23,19 +23,31 @@ def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConf
         print(f"Fix your system first! Missing: {missing}")
         return
 
+    ignore_pattern_sample1 = r"\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\b"
+    ignore_pattern_sample2 = r'An\s+Overview\s+of\s+Concepts\s+and\s+Historical\s+Examples\s*'
     # 2. Define Configuration
     # We use a lower DPI for the first test to save RAM
     if semantic_compare:
         config = VerisiftConfig(
             comparison_mode="semantic", 
             dpi=150,
-            poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin"
+            poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin",
+            ignore_patterns_flag=True,
+            ignore_patterns=[
+                ignore_pattern_sample1,
+                ignore_pattern_sample2
+                ]       
         )
     else:
         config = VerisiftConfig(
         comparison_mode="literal", 
         dpi=150,
-        poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin"
+        poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin",
+        ignore_patterns_flag=True,
+            ignore_patterns=[
+                ignore_pattern_sample1,
+                ignore_pattern_sample2
+                ] 
         )
 
     # 3. Trigger the Engine
@@ -77,6 +89,8 @@ if __name__ == "__main__":
     semantic_actual = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_semantic.pdf"
     actual_semantic = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_semantic_actual.pdf"
     expected_semantic = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_semantic_expected.pdf"
+    actual4 = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_exclusion_date_actual.pdf"
+    expected4 = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift\Electronic_Warfare_exclusion_date_expected.pdf"
 
     output_dir = r"C:\Users\PenugondaPavanKalyan\Downloads\verisift"
     report_name = "test_report.html"
@@ -87,3 +101,4 @@ if __name__ == "__main__":
     # run_local_audit(EXPECTED, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(ACTUAL3, EXPECTED3, semantic_compare, output_dir, report_name)
     run_local_audit(actual_semantic, expected_semantic, semantic_compare, output_dir, report_name)
+    # run_local_audit(actual4, expected4, semantic_compare, output_dir, report_name)
