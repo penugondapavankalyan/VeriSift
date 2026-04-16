@@ -4,6 +4,11 @@ from typing import List, Optional
 
 @dataclass
 class VerisiftConfig:
+    # Textual and Visual weightage
+    # textual weightage lies in the range 0.0 to 1.0, 
+    # visual weightage is automatically caluclated by 1-textual weightage
+    txt_weightage: float = 0.8 # for more textual content and less visual content
+    
     # Thresholds for similarity (0.0 to 1.0)
     # --- Similarity Sensitivity ---
     # float: 0.95 means 95% semantic match required to 'pass'

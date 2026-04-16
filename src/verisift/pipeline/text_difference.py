@@ -158,9 +158,16 @@ def compare_text(text_a: str, text_b: str, config: VerisiftConfig):
     """
     logger.info(f"Processing text comparison: Mode={config.comparison_mode}")
 
-    # 1. Scores
-    lit_score = _run_literal_comparison(text_a, text_b)
-    sem_score = _run_semantic_comparison(text_a, text_b) if config.comparison_mode == "semantic" else None
+    if config.ignore_patterns_flag==True and config.ignore_patterns:
+        clean_txt_a = re.sub(r'(VERISIFT_START)(.*?)(VERISIFT_END)', '' , text_a, re.IGNORECASE)
+        clean_txt_b = re.sub(r'(VERISIFT_START)(.*?)(VERISIFT_END)', '' , text_b, re.IGNORECASE)
+        # 1. Scores
+        lit_score = _run_literal_comparison(clean_txt_a, clean_txt_b)
+        sem_score = _run_semantic_comparison(clean_txt_a, clean_txt_b) if config.comparison_mode == "semantic" else None
+    else:
+        # 1. Scores
+        lit_score = _run_literal_comparison(text_a, text_b)
+        sem_score = _run_semantic_comparison(text_a, text_b) if config.comparison_mode == "semantic" else None
     
     # primary_score = sem_score if config.comparison_mode == "semantic" else lit_score
 

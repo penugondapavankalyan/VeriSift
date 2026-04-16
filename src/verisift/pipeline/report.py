@@ -41,7 +41,7 @@ def generate_html_report(report: ComparisonReport, output_path: str):
         p.visual_score = float(p.visual_score)
 
 
-    def _get_pdf_properties(pdf_path):
+    def _get_pdf_properties(pdf_path: str) -> dict:
         if not pdf_path or not os.path.exists(pdf_path):
             return {} # Return empty dict instead of None to simplify lookups
         try:

@@ -92,11 +92,76 @@ class Comparator:
         
         logger.info(f"Scan detection complete: {doc_is_image}")
         return doc_is_image
+    def overall_score_calculator(self, txt_diff_score: float, visual_diff_score: float) -> float:
+        txt_score = self.config.txt_weightage * txt_diff_score
+        visual_score = (1 - self.config.txt_weightage) * visual_diff_score
+        return txt_score + visual_score
+    
+    def validate_config(self) -> bool:
+        """
+        Checks if the config is valid. Raises an exception if invalid.
+        """
+        valid_config = [True]
+        if not self.config:
+            valid_config.append(False)
+            raise ValueError("No config provided.")
+        
+        if self.config.txt_weightage < 0 or self.config.txt_weightage > 1:
+            valid_config.append(False)
+            logger.error(f"Text weightage must be between 0 and 1 but it is {self.config.txt_weightage}")
+            raise ValueError("Text weightage must be between 0 and 1.")
 
-    def compare(self, actual_path: str, expected_path: str):
+        if self.config.text_threshold < 0 or self.config.text_threshold > 1:
+            valid_config.append(False)
+            logger.error(f"Text similarity threshold must be between 0 and 1 but it is {self.config.text_threshold}")
+            raise ValueError("Text similarity threshold must be between 0 and 1.")
+        
+        if self.config.visual_threshold < 0 or self.config.visual_threshold > 1:
+            valid_config.append(False)
+            logger.error(f"Visual similarity threshold must be between 0 and 1 but it is {self.config.visual_threshold}")
+            raise ValueError("Visual similarity threshold must be between 0 and 1.")
+        
+        if self.config.comparison_mode not in ["literal", "semantic"]:
+            valid_config.append(False)
+            logger.error(f"Invalid comparison mode: {self.config.comparison_mode}. Must be 'literal' or 'semantic'.")
+            raise ValueError("Invalid comparison mode. Must be 'literal' or 'semantic'.")
+        
+        if self.config.dpi < 50 or self.config.dpi > 300:
+            valid_config.append(False)
+            logger.error(f"Invalid DPI value: {self.config.dpi}. Must be between 50 and 300.")
+            raise ValueError("Invalid DPI value. Must be between 50 and 300.")
+        
+        if self.config.ignore_patterns_flag and not isinstance(self.config.ignore_patterns, list):
+            valid_config.append(False)
+            logger.error(f"Invalid ignore_patterns value: {self.config.ignore_patterns}. Must be a list if ignore_patterns_flag is True.")
+            raise ValueError("Invalid ignore_patterns value. Must be a list if ignore_patterns_flag is True.")
+        
+        if self.config.comparison_mode=="semantic":
+            if self.config.semantic_threshold < 0 or self.config.semantic_threshold > 1:
+                valid_config.append(False)
+                logger.error(f"Invalid semantic threshold value: {self.config.semantic_threshold}. Must be between 0 and 1.")
+                raise ValueError("Invalid semantic threshold value. Must be between 0 and 1.")
+            if self.config.semantic_max_phrase < 1 or self.config.semantic_max_phrase > 100:
+                valid_config.append(False)
+                logger.error(f"Invalid semantic max phrase value: {self.config.semantic_max_phrase}. Must be between 1 and 100.")
+                raise ValueError("Invalid semantic max phrase value. Must be between 1 and 100.")
+        
+        return all(valid_config)
+
+
+    def compare(self, actual_path: str, expected_path: str) -> ComparisonReport:
         """
         The Main Pipeline Workflow.
         """
+        logger.info(f"validating configuration...")
+        validate_config_result = self.validate_config()
+        if validate_config_result:
+            logger.info(f"Configuration is valid...")
+        else:
+            logger.error(f"Configuration is invalid...")
+            raise ValueError("Configuration is invalid.")
+        
+
         logger.info(f"Starting comparison: {actual_path} vs {expected_path}")
 
         # Step 1: Ingestion (Returns DocumentData objects)
@@ -239,7 +304,8 @@ class Comparator:
             else:
                 report.avg_intent_score = None
 
-            report.overall_score = round(((avg_text + avg_vis) / 2) * 100, 2)
+            # report.overall_score = round(((avg_text + avg_vis) / 2) * 100, 2)
+            report.overall_score = round(self.overall_score_calculator(avg_text, avg_vis) * 100, 2)
 
             report.passed_pages = sum(1 for p in report.pages if p.text_match and p.visual_match)
             report.failed_pages = report.total_pages - report.passed_pages

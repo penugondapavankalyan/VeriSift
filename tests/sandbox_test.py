@@ -32,7 +32,7 @@ def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConf
             comparison_mode="semantic", 
             dpi=150,
             poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin",
-            ignore_patterns_flag=True,
+            ignore_patterns_flag=False,
             ignore_patterns=[
                 ignore_pattern_sample1,
                 ignore_pattern_sample2
@@ -43,7 +43,7 @@ def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConf
         comparison_mode="literal", 
         dpi=150,
         poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin",
-        ignore_patterns_flag=True,
+        ignore_patterns_flag=False,
             ignore_patterns=[
                 ignore_pattern_sample1,
                 ignore_pattern_sample2
@@ -100,5 +100,5 @@ if __name__ == "__main__":
     # run_local_audit(semantic_actual, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(EXPECTED, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(ACTUAL3, EXPECTED3, semantic_compare, output_dir, report_name)
-    run_local_audit(actual_semantic, expected_semantic, semantic_compare, output_dir, report_name)
-    # run_local_audit(actual4, expected4, semantic_compare, output_dir, report_name)
+    # run_local_audit(actual_semantic, expected_semantic, semantic_compare, output_dir, report_name)
+    run_local_audit(actual4, expected4, semantic_compare, output_dir, report_name)
