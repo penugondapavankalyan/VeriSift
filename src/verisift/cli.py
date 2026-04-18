@@ -248,8 +248,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  verisift compare --actual a.pdf --expected e.pdf --mode semantic --dpi 300
-  verisift set-config --popplerpath "C:\\poppler\\bin"
+  verisift compare --actual a.pdf --expected e.pdf --mode semantic --dpi 150
+  verisift set-config --popplerpath "C:\\Program Files\\poppler\\Library\\bin"
   verisift display-config
   verisift health-check
         """
@@ -326,9 +326,11 @@ Examples:
     elif args.command == "health-check":
         is_ok, missing = run_health_check()
         if is_ok:
-            print("✅ System health is excellent. Poppler detected.")
+            logger.info("✅ System health is excellent. Poppler detected.")
+            # print("✅ System health is excellent. Poppler detected.")
         else:
-            print(f"❌ Missing dependencies: {', '.join(missing)}")
+            logger.error(f"❌ Missing dependencies: {', '.join(missing)}")
+            # print(f"❌ Missing dependencies: {', '.join(missing)}")
         sys.exit(0 if is_ok else 1)
 
     elif args.command == "compare":
@@ -349,10 +351,11 @@ Examples:
             report_path = os.path.join(config.output_dir, config.report_name)
             
             if generate_html_report(report, report_path):
-                logger.info(f"✅ Report generated: {os.path.abspath(report_path)}")
-                print(f"✅ Comparison Finished. Report: {report_path}")
+                logger.info(f"✅ Comparison Finished. Report generated successfully at: {os.path.abspath(report_path)}")
+                # print(f"✅ Comparison Finished. Report: {report_path}")
         except Exception as e:
-            print(f"❌ Execution failed: {e}")
+            logger.error(f"❌ Execution failed: {e}")
+            # print(f"❌ Execution failed: {e}")
             sys.exit(1)
 
     elif args.command == "display-config":

@@ -33,8 +33,9 @@ def _run_literal_comparison(text_a, text_b):
 def _run_semantic_comparison(text_a, text_b):
     """Intent-based logic using AI embeddings."""
     if not HAS_NLP:
-        logger.error("NLP libraries not found. Falling back to Literal mode.")
-        return _run_literal_comparison(text_a, text_b)
+        raise ImportError("Semantic mode requires NLP extras. Run 'pip install verisift[nlp]' to install dependencies needed for semantic mode.")
+        # logger.error("NLP libraries not found. Falling back to Literal mode.")
+        # return _run_literal_comparison(text_a, text_b)
     
     model = get_nlp_model()
     emb1 = model.encode(text_a, convert_to_tensor=True)
