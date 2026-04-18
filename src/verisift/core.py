@@ -3,11 +3,9 @@ import logging
 import os 
 from .config import VerisiftConfig # settings dataclass
 from .pipeline.ingest import ingest_pdf # PDF reading engine
-# from .pipeline.text_diff import compare_text
-
-from .pipeline.text_difference import compare_text
-
+from .pipeline.text_diff import compare_text
 from .pipeline.visual_diff import compare_visual
+from .pipeline.report import generate_html_report
 from .models import PageComparisonResult, ComparisonReport
 from itertools import zip_longest
 
@@ -176,28 +174,28 @@ class Comparator:
             )
 
         # Step 3: Decision Gate (Image-PDF Check)
-        doc_is_image = self.is_image_pdf(doc_actual, doc_expected)
+        # doc_is_image = self.is_image_pdf(doc_actual, doc_expected)
 
-        if doc_is_image["doc_actual_is_image"]:
-            logger.warning("Actual PDF contains scanned images. Semantic diffing may be limited.")
-            if self.config.ocr_enabled:
-                logger.info("Scanned pages detected. Initializing OCR engine...")
-            # self.run_ocr_pipeline(doc_actual)
-            else:
-                logger.warning(
-            "Scanned pages detected but OCR is disabled. "
-            "Falling back to Visual (Pixel) comparison only."
-                )
-        if doc_is_image["doc_expected_is_image"]:
-            logger.warning("Expected PDF contains scanned images. Semantic diffing may be limited.")
-            if self.config.ocr_enabled:
-                logger.info("Scanned pages detected. Initializing OCR engine...")
-                # self.run_ocr_pipeline(doc_expected)
-            else:
-                logger.warning(
-                    "Scanned pages detected but OCR is disabled. "
-                    "Falling back to Visual (Pixel) comparison only."
-                    )
+        # if doc_is_image["doc_actual_is_image"]:
+            # logger.warning("Actual PDF contains scanned images. Semantic diffing may be limited.")
+            # if self.config.ocr_enabled:
+            #     logger.info("Scanned pages detected. Initializing OCR engine...")
+            # # self.run_ocr_pipeline(doc_actual)
+            # else:
+            #     logger.warning(
+            # "Scanned pages detected but OCR is disabled. "
+            # "Falling back to Visual (Pixel) comparison only."
+            #     )
+        # if doc_is_image["doc_expected_is_image"]:
+        #     logger.warning("Expected PDF contains scanned images. Semantic diffing may be limited.")
+        #     if self.config.ocr_enabled:
+        #         logger.info("Scanned pages detected. Initializing OCR engine...")
+        #         # self.run_ocr_pipeline(doc_expected)
+        #     else:
+        #         logger.warning(
+        #             "Scanned pages detected but OCR is disabled. "
+        #             "Falling back to Visual (Pixel) comparison only."
+        #             )
         
         # Step 4: text_diff and visual_diff 
 
@@ -207,6 +205,7 @@ class Comparator:
         report = ComparisonReport(
             actual_path=actual_path,
             expected_path=expected_path,
+            configuration=vars(self.config),
             total_pages=max(len(doc_actual.pages), len(doc_expected.pages)),
             metadata={
                 "actual": {
@@ -219,13 +218,6 @@ class Comparator:
                 }
             }
         )
-
-        # # 1. Initialize the Master Report object
-        # report = ComparisonReport(
-        #     actual_path=actual_path,
-        #     expected_path=expected_path,
-        #     total_pages=max(len(doc_actual.pages), len(doc_expected.pages))
-        # )
 
         # 2. Iterate through pages using zip_longest
         # fillvalue=None ensures that if one document ends, the loop continues with None for that page
@@ -259,7 +251,8 @@ class Comparator:
                 logger.info("compare successful...")
                 text_res["text_score"] = 0.0
                 text_res["is_match"] = False
-                vis_res = {"vis_score": 0.0, "is_match": False, "heatmap": None} # Heatmap generator usually needs 2 images
+                vis_res = {"vis_score": 0.0, "is_match": False, "heatmap": None} if self.config.enable_visual else None
+               # Heatmap generator usually needs 2 images
                 is_scanned = False
                 actual_img = page_a.image if page_a else None
                 expected_img = page_b.image if page_b else None
@@ -271,14 +264,13 @@ class Comparator:
                 text_score=text_res["text_score"],
                 intent_score=text_res["intent_score"],
                 text_match=text_res["is_match"],
-                # diff_text=text_res["diff_text"],
                 actual_diff_html=text_res["actual_diff_html"],
                 expected_diff_html=text_res["expected_diff_html"],
                 semantic_diff_actual_html=text_res["semantic_diff_actual_html"],
-                semantic_diff_expected_html= text_res["semantic_diff_expected_html"],  
-                visual_score=vis_res["vis_score"] if vis_res else None,
-                visual_match=vis_res["is_match"] if vis_res else None,
-                heatmap=vis_res["heatmap"] if vis_res else None,
+                semantic_diff_expected_html=text_res["semantic_diff_expected_html"],
+                visual_score=vis_res["vis_score"] if (vis_res and self.config.enable_visual) else None,
+                visual_match=vis_res["is_match"] if (vis_res and self.config.enable_visual) else None,
+                heatmap=vis_res["heatmap"] if (vis_res and self.config.enable_visual) else None,
                 actual_image=actual_img if self.config.enable_visual else None,
                 expected_image=expected_img if self.config.enable_visual else None,
                 is_scanned=is_scanned
@@ -287,28 +279,34 @@ class Comparator:
             # Update master report
             report.pages.append(page_result)
             
-            # Update counters for the final summary
-            if page_result.text_match and page_result.visual_match:
-                report.passed_pages += 1
-            else:
-                report.failed_pages += 1
+            # Update counters for the final summary (Logic depends on whether visual is enabled)
+            is_page_pass = page_result.text_match
+            if self.config.enable_visual:
+                is_page_pass = is_page_pass and page_result.visual_match
+            
+            if is_page_pass: report.passed_pages += 1
+            else: report.failed_pages += 1
 
         # Calculate the Final Overall Score
         # This gives a single 'matching similarity %' for the entire document
         if report.total_pages > 0:
             # Average of text and visual scores across all pages
-            avg_text = sum(p.text_score for p in report.pages) / len(report.pages)
-            avg_vis = sum(p.visual_score for p in report.pages) / len(report.pages)
+            report.text_score_avg = sum(p.text_score for p in report.pages) / len(report.pages)
+            if self.config.enable_visual:
+                report.visual_score_avg = sum(p.visual_score for p in report.pages) / len(report.pages)
+            else:
+                report.visual_score_avg = None
+            
             if self.config.comparison_mode == "semantic":
                 report.avg_intent_score = round((sum(p.intent_score for p in report.pages) / len(report.pages))*100 , 2)
             else:
                 report.avg_intent_score = None
 
             # report.overall_score = round(((avg_text + avg_vis) / 2) * 100, 2)
-            report.overall_score = round(self.overall_score_calculator(avg_text, avg_vis) * 100, 2)
+            report.overall_score = round(self.overall_score_calculator(report.text_score_avg, report.visual_score_avg) * 100, 2) if self.config.enable_visual else round(report.text_score_avg * 100, 2)
 
-            report.passed_pages = sum(1 for p in report.pages if p.text_match and p.visual_match)
             report.failed_pages = report.total_pages - report.passed_pages
+            logging.info(f"{report.passed_pages} page(s) PASSED, {report.failed_pages} page(s) FAILED")
 
         else:
             report.overall_score = 0.0
@@ -316,3 +314,16 @@ class Comparator:
         logger.info(f"Comparison Summary: {report.passed_pages}/{report.total_pages} pages passed.")
         logger.info(f"Overall Score: {report.overall_score}%")
         return report # Return the full data object 
+
+
+    def generate_report(self, actual_path: str, expected_path: str, \
+            output_path: str=os.path.join(VerisiftConfig.output_dir, \
+            VerisiftConfig.report_name)):
+        try:
+            report = self.compare(actual_path, expected_path)
+            # print(f"verisift.core:report info: {report}")
+            generate_html_report(report, output_path)
+        
+        except Exception as e:
+            logger.error(f"Error generating report: {e}")
+            raise e

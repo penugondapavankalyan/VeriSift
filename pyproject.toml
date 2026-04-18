@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "verisift"
-version = "0.1.0"
+version = "1.0"
 description = "Precise PDF Audits. Private by Design."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -16,6 +16,7 @@ dependencies = [
     "scikit-image>=0.19.0",
     "jinja2>=3.0.0",
     "PyPDF2>=3.0.0",
+    "diff_match_patch>=20241021"
 ]
 
 [project.optional-dependencies]
@@ -27,4 +28,4 @@ nlp = [
 where = ["src"]
 
 [project.scripts]
-verisift = "verisift.core:main" # Placeholder if you add a CLI entry point later
+verisift = "verisift.cli:main" # Placeholder if you add a CLI entry point later

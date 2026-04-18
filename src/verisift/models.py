@@ -48,6 +48,9 @@ class ComparisonReport:
     actual_path: str
     expected_path: str
     
+    # Configuration to display on the report
+    configuration: Dict[str, Any]
+
     # List: A collection of PageComparisonResult objects
     pages: List[PageComparisonResult] = field(default_factory=list)
 
@@ -60,9 +63,15 @@ class ComparisonReport:
     total_pages: int = 0
     passed_pages: int = 0
     failed_pages: int = 0
-    
+
+    # text score
+    text_score_avg: float = 0.0
+
+    # visual score
+    visual_score_avg: Optional[float] = None
+
     # Intent matching score
     avg_intent_score: Optional[float] = None
 
-    # Metadata about the environment
+    # Metadata about the PDF
     metadata: Dict[str, Any] = field(default_factory=lambda: {"actual": {}, "expected": {}})

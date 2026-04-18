@@ -16,7 +16,7 @@ from src.verisift.pipeline.report import generate_html_report
 # Setup logging to see what's happening under the hood
 logging.basicConfig(level=logging.INFO)
 
-def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConfig.output_dir, report_name=VerisiftConfig.report_name):
+def run_local_audit(pdf_a, pdf_b, semantic_compare=False, output_dir=VerisiftConfig.output_dir, report_name=VerisiftConfig.report_name):
     # 1. Manual Health Check
     is_ok, missing = run_health_check()
     if not is_ok:
@@ -31,8 +31,11 @@ def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConf
         config = VerisiftConfig(
             comparison_mode="semantic", 
             dpi=150,
+            enable_visual=False,
+            txt_weightage=0.5,
+            semantic_threshold=0.2,
             poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin",
-            ignore_patterns_flag=False,
+            ignore_patterns_flag=True,
             ignore_patterns=[
                 ignore_pattern_sample1,
                 ignore_pattern_sample2
@@ -42,8 +45,9 @@ def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConf
         config = VerisiftConfig(
         comparison_mode="literal", 
         dpi=150,
+        enable_visual=False,
         poppler_path = r"C:\Program Files\poppler\poppler-25.12.0\Library\bin",
-        ignore_patterns_flag=False,
+        ignore_patterns_flag=True,
             ignore_patterns=[
                 ignore_pattern_sample1,
                 ignore_pattern_sample2
@@ -55,9 +59,9 @@ def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConf
     engine = Comparator(config)
     
     try:
-        report = engine.compare(pdf_a, pdf_b)
-        print(f"[SUCCESS] Comparison finished. Total pages: {report.total_pages}")
-        print(f"[*] Match Score: {report.overall_score}%")
+        # report = engine.compare(pdf_a, pdf_b)
+        # print(f"[SUCCESS] Comparison finished. Total pages: {report.total_pages}")
+        # print(f"[*] Match Score: {report.overall_score}%")
         # print(f"report info: {report}")
 
         try:      
@@ -68,8 +72,9 @@ def run_local_audit(pdf_a, pdf_b, semantic_compare=False, utput_dir=VerisiftConf
             # print(f"full report path: {full_report_path}")
 
             # Pass the full_report_path instead of just the directory
-            generate_html_report(report, full_report_path)
-            
+            # generate_html_report(report, full_report_path)
+            # generate_html_report(report)
+            engine.generate_report(pdf_a, pdf_b, full_report_path)
             # print(f"[SUCCESS] Report saved to: {full_report_path}")
             
         except Exception as e:
@@ -100,5 +105,5 @@ if __name__ == "__main__":
     # run_local_audit(semantic_actual, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(EXPECTED, EXPECTED, semantic_compare, output_dir, report_name)
     # run_local_audit(ACTUAL3, EXPECTED3, semantic_compare, output_dir, report_name)
-    # run_local_audit(actual_semantic, expected_semantic, semantic_compare, output_dir, report_name)
-    run_local_audit(actual4, expected4, semantic_compare, output_dir, report_name)
+    run_local_audit(actual_semantic, expected_semantic, semantic_compare, output_dir, report_name)
+    # run_local_audit(actual4, expected4, semantic_compare, output_dir, report_name)

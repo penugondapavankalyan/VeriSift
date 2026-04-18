@@ -70,14 +70,21 @@
 }
         .legend-bar { display: flex; gap: 14px; flex-wrap: wrap; padding: 15px 24px; border-bottom: 1px solid var(--border); background: var(--surface2); width: 100%; }
         .li { display: flex; align-items: center; gap: 5px}
-        .li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+        .li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
         .ld { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
         .meta-col-hd { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .mr { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dotted var(--border); font-size: 13px; }
         .mk { color: var(--text2); }
-        .mv { font-weight: 600; }
+        .mv { font-weight: 600; width: 80%; overflow-wrap: anywhere;}
+        
+        .info-icon { 
+            display: inline-flex; align-items: center; justify-content: center; 
+            width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--text3); 
+            font-size: 9px; font-family: serif; font-style: italic; font-weight: bold; 
+            color: var(--text2); cursor: help; margin-left: 4px; vertical-align: middle;
+        }
 
         .params-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
         .sc { padding: 20px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); }
@@ -109,7 +116,7 @@
         .pg-body.vis { display: block; }
         .pg-hdr-left {display: flex; align-items: center; gap: 15px; min-width: 0; }
         /* Rotates the arrow when the page section is expanded */
-        .pg-section.expanded .pg-hdr .card-arrow { transform: rotate(180deg); }
+        .pg-section.expanded .pg-hdr .card-arrow { transform: rotate(1deg); }
         /* Ensure the arrow inside pg-hdr has the same transition properties */
         .pg-hdr .card-arrow { transition: transform 0.3s ease; display: flex;align-items: center; margin-left: 10px; }
 
@@ -137,27 +144,12 @@
         [id^="s"] .diff_semantic { display: inline !important; visibility: visible !important; opacity: 1 !important; }
 
         /* Amber highlight for ignored/excluded patterns */
-.diff_excluded {
-    background-color: #fff8e1 !important; /* Light Amber/Yellow */
-    color: #ff8f00 !important;           /* Darker Amber text */
-    border: 1px dashed #ffb300;          /* Dashed border to show it's 'ignored' */
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-family: monospace;              /* Makes technical data look distinct */
-    cursor: help;                        /* Shows the user they can hover for info */
-    display: inline-block;
-}
+        .diff_excluded { background-color: #fff8e1 !important; color: #ff8f00 !important; border: 1px dashed #ffb300; 
+                    padding: 2px 4px; border-radius: 4px; font-family: monospace; cursor: help; display: inline-block; }
 
-/* Make the [IGNORED] text look like a small tag */
-.diff_excluded::after {
-    /* Optional: If you want to force the text via CSS instead of Python, 
-       you could use content: " [IGNORED]"; here instead of in sanitizer.py */
-    font-size: 0.75em;
-    font-weight: bold;
-    text-transform: uppercase;
-    opacity: 0.8;
-    margin-left: 5px;
-}
+        /* Make the [IGNORED] text look like a small tag */
+        .diff_excluded::after { font-size: 0.75em; font-weight: bold; text-transform: uppercase;
+                    opacity: 0.8; margin-left: 5px; }
 
         .tog-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         .tog-btn { padding: 8px 16px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; border-radius: 36px; }
@@ -216,15 +208,25 @@
                     <div class="meta-col-hd">Expected / Baseline docment </div>
                     <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.expected.filename }}</span></div>
                     <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.expected.filesize }}</span></div>
+                    <div class="mr"><span class="mk">File Path</span><span class="mv"><a href="{{ metadata_comparison.expected.filepath }}">{{ metadata_comparison.expected.filepath }}</a></span></div>
+                    <div class="mr"><span class="mk">Create Date</span><span class="mv">{{ metadata_comparison.expected.createdate }}</span></div>
+                    <div class="mr"><span class="mk">Modified Date</span><span class="mv">{{ metadata_comparison.expected.modifieddate }}</span></div>
                     <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.expected.pages }}</span></div>
                     <div class="mr"><span class="mk">Creator</span><span class="mv">{{ metadata_comparison.expected.creator }}</span></div>
+                    <div class="mr"><span class="mk">Author</span><span class="mv">{{ metadata_comparison.expected.author }}</span></div>
+                    <div class="mr"><span class="mk">Encryption</span><span class="mv">{{  metadata_comparison.expected.encryption }}</span></div>
                 </div>
                 <div>
                     <div class="meta-col-hd">Actual / Target document </div>
                     <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.actual.filename }}</span></div>
                     <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.actual.filesize }}</span></div>
+                    <div class="mr"><span class="mk">File Path</span><span class="mv"><a href="{{ metadata_comparison.actual.filepath }}" target="_blank">{{ metadata_comparison.actual.filepath }}</a></span></div>
+                    <div class="mr"><span class="mk">Create Date</span><span class="mv">{{ metadata_comparison.actual.createdate }}</span></div>
+                    <div class="mr"><span class="mk">Modified Date</span><span class="mv">{{ metadata_comparison.actual.modifieddate }}</span></div>
                     <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.actual.pages }}</span></div>
                     <div class="mr"><span class="mk">Creator</span><span class="mv">{{ metadata_comparison.actual.creator }}</span></div>
+                    <div class="mr"><span class="mk">Author</span><span class="mv">{{ metadata_comparison.actual.author }}</span></div>
+                    <div class="mr"><span class="mk">Encryption</span><span class="mv">{{ metadata_comparison.actual.encryption }}</span></div>
                 </div>
             </div>
         </div>
@@ -246,6 +248,32 @@
             </div>
         </div>
         <div class="card-body vis">
+
+            <div style="margin-top: 30px; margin-bottom: 30px;">
+                <div class="meta-col-hd">Configuration used for the Comparison</div>
+                <div class="meta-grid">
+                    <div>
+                        <div class="meta-col-hd"><div class="mr"><span class="mv">Parameter</span><span class="mv">Value</span></div></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Comparison Mode <span class="info-icon" title="Standard literal comparison is performed by default. If Semantic Mode is enabled, an additional NLP-based analysis is conducted to identify and display contextual differences for each page.">i</span></span><span class="mv">{{ report.configuration.get('comparison_mode', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Visual Comparison Enabled <span class="info-icon" title="Determines whether pixel-level visual analysis is performed alongside text comparison.">i</span></span><span class="mv">{{ report.configuration.get('enable_visual', false) }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Text Weightage <span class="info-icon" title="Textual score weightage in the overall score. ranges between 0 and 1. textual and visual weightage sum up to 1">i</span></span><span class="mv">{{ report.configuration.get('txt_weightage', 'N/A') }} ({{ report.configuration.get('txt_weightage', 'N/A')*100 | round(2) }}%) </span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Visual Weightage <span class="info-icon" title="Visual score weightage in the overall score. ranges between 0 and 1. caluclated by deducting text weightage from 1.">i</span></span><span class="mv">{{ (1 - (report.configuration.get('txt_weightage', 'N/A'))) | round(2) }} ({{ ((1 - (report.configuration.get('txt_weightage', 'N/A'))) | round(2))*100 }} %)</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Semantic Threshold <span class="info-icon" title="Threshold value above which the phrases are considered similar. ranges between 0 and 1.">i</span></span><span class="mv">{{ report.configuration.get('semantic_threshold', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Semantic Max Phrases <span class="info-icon" title="Decides the length of the phrase that the semantic compare applies">i</span></span><span class="mv">{{ report.configuration.get('semantic_max_phrase', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Ignore Matching Text <span class="info-icon" title="Specifies whether defined exclusion patterns should be applied during the comparison process.">i</span></span><span class="mv">{{ report.configuration.get('ignore_patterns_flag', 'N/A') }}</span></div>
+                    </div>
+                    <div>
+                        <div class="meta-col-hd"><div class="mr"><span class="mv" style="width: 25%;">Parameter</span><span class="mv">Value</span></div></div>
+                        <div class="mr"><span class="mk" style="width:25%;">Text Threshold <span class="info-icon" title="Threshold value above which the phrases are considered similar. ranges between 0 and 1.">i</span></span><span class="mv">{{ report.configuration.get('text_threshold', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width:25%;">Visual Threshold <span class="info-icon" title="Threshold value above which the phrases are considered similar. ranges between 0 and 1.">i</span></span><span class="mv">{{ report.configuration.get('visual_threshold', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width:25%;">DPI <span class="info-icon" title="Lower for speed, higher for precision. ranges between 50 and 300.">i</span></span><span class="mv">{{ report.configuration.get('dpi', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width:25%;">Poppler Path <span class="info-icon" title="Location of the poppler executable. Necessary for visual comparison.">i</span></span><span class="mv"><a href="file://{{ report.configuration.get('poppler_path', 'N/A') }}">{{ report.configuration.get('poppler_path', 'N/A') }}</a></span></div>
+                        <div class="mr" style="padding-right: 20px;"><span class="mk" style="width:25%;">Matching Patterns Regex to Ignore <span class="info-icon" title="Regex patterns for exclusion during comparison">i</span></span><span class="mv" style="overflow:scroll; height: 70px; width: 80%; padding-right: 30px;">{{ report.configuration.get('ignore_patterns', 'N/A') }}</span></div>
+                    </div>
+                </div>
+
+            </div>
+
             <div class="params-grid">
                 <div class="sc">
                     <div class="sc-lbl">Overall Match</div>
@@ -257,11 +285,13 @@
                     <div class="sc-val">{{ text_score_avg }}%</div>
                     <div class="sc-bar"><div class="sc-fill bg-blue" style="width: {{ text_score_avg }}%"></div></div>
                 </div>
+                {% if report.configuration.get('enable_visual', false) %}
                 <div class="sc">
                     <div class="sc-lbl">Visual Accuracy</div>
                     <div class="sc-val">{{ visual_score_avg }}%</div>
                     <div class="sc-bar"><div class="sc-fill bg-green" style="width: {{ visual_score_avg }}%"></div></div>
                 </div>
+                {% endif %}
                 {% if report.avg_intent_score is not none %}
                     <div class="sc">
                         <div class="sc-lbl">Semantic Match</div>
@@ -276,7 +306,7 @@
                 <div class="hm-row">
                     {% for page in report.pages %}
                         {% if page.visual_score is not none %}
-                            {% set page_avg = ((page.text_score + (page.visual_score )) / 2 * 100) | round(2) %}
+                            {% set page_avg = (((page.text_score * report.configuration.get('txt_weightage', 0.5)) + (page.visual_score * (1 - report.configuration.get('txt_weightage', 0.5)))) * 100) | round(2) %}
                         {% else %}
                             {% set page_avg = (page.text_score * 100) | round(2) %}
                         {% endif %}
@@ -316,8 +346,7 @@
                 <div class="li"><div class="ld" style="background:var(--green)"></div>Textual difference</div>
                 <div class="li"><div class="ld" style="background:var(--amber);border:1px dashed var(--amber-border)"></div>Excluded (dynamic field)</div>
                 <div class="li"><div class="ld" style="background:var(--red);opacity: 0.3;"></div>Visual diff region</div>
-                <div class="li"><div class="ld" style="background:var(--violet)"></div>Semantic diff region</div>
-                <div class="li"><diff region</div>
+                <div class="li"><div class="ld" style="background:var(--violet)"></div>Semantic diff region <span class="info-icon" title="Highlighted in violet only when text differs literally but carries similar contextual meaning based on the semantic threshold.">i</span></div>
             </div>
             {% for page in report.pages %}
             <div class="pg-section" id="pg-{{ loop.index }}">
@@ -332,12 +361,13 @@
                         {% if page.intent_score is not none %}
                             <span class="badge b-semantic">{{ (page.intent_score * 100) | round(2) }}% Semantic</span>
                         {% endif %}
+                        </div>
                         <div class="card-arrow">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
+                                <polyline points="6 9 12 3 18 9"></polyline>
                             </svg>
                         </div>
-                    </div>
+                    <!-- </div> -->
                 </div>
                 
                 <div class="pg-body">
@@ -395,28 +425,13 @@
 </main>
 
 <script>
-    // function toggleCard(hdr) {
-    //     const card = hdr.closest('.card');
-    //     card.classList.toggle('expanded');
-    //     card.querySelector('.card-body').classList.toggle('vis');
-    // }
-
-    // function togglePage(hdr) {
-    //     hdr.nextElementSibling.classList.toggle('vis');
-
-    //     const section = hdr.closest('.pg-section');
-    //     if (section) {
-    //         section.classList.toggle('expanded');
-    //     }
-    // }
-
-
     function toggleCard(hdr) {
     const card = hdr.closest('.card');
         if (card) {
             card.classList.toggle('expanded');
             const body = card.querySelector('.card-body');
             if (body) body.classList.toggle('vis');
+
         }
     }
 
@@ -467,7 +482,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'Verisift_Report_{{ run_id }}.html';
+        a.download = 'Verisift_Report_{{ run_id }}_{{ timestamp }}.html';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
