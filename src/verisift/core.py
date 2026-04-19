@@ -23,7 +23,7 @@ def setup_logging(output_dir="logs", log_to_file=True):
     
     if log_to_file:
         log_file = os.path.join(output_dir, "verisift.log")
-        handlers.append(logging.FileHandler(log_file))
+        handlers.append(logging.FileHandler(filename=log_file))
 
     # This 'basicConfig' applies to ALL modules in your project
     logging.basicConfig(

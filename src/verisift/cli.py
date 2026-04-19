@@ -121,7 +121,7 @@ def _tokenize_pattern_list(list_content: str) -> list:
             if tok_type == tokenize.STRING:
                 stripped = _strip_string_literal(tok_string)
                 patterns.append(stripped)
-                print(f"  Tokenized pattern: {stripped}")
+                # print(f"  Tokenized pattern: {stripped}")
     except tokenize.TokenError as e:
         logger.warning(f"Tokenize error: {e}. Attempting manual parsing.")
         # Fallback: manually parse string literals
@@ -158,7 +158,6 @@ def _parse_exclusion_patterns(val) -> list:
         inner = cleaned[1:-1].strip()
         if not inner:
             return []
-        print(f"inner: {inner}")
         parsed = _tokenize_pattern_list(inner)
         if parsed:
             return parsed
@@ -196,17 +195,17 @@ Examples:
     # --- HELPER: Common Configuration Arguments ---
     # This ensures both 'compare' and 'set-config' share the same flags
     def add_config_args(subparser, is_permanent=False):
-        subparser.add_argument("--mode", choices=["literal", "semantic"], help="Comparison mode")
-        subparser.add_argument("--enable_visual", choices=["true", "false"], help="Enable visual comparison")
-        subparser.add_argument("--dpi", type=int, help="Rendering DPI (50-300)")
+        subparser.add_argument("--mode", choices=["literal", "semantic"], help="Comparison mode. Default literal")
+        subparser.add_argument("--enable_visual", choices=["true", "false"], help="Enable visual comparison. Default True")
+        subparser.add_argument("--dpi", type=int, help="Rendering DPI (50-300). Default 150.")
         subparser.add_argument("--outputdir", help="Output directory path")
         subparser.add_argument("--reportname", help="Custom HTML report filename")
         subparser.add_argument("--popplerpath", help="Path to poppler/bin")
-        subparser.add_argument("--txt_weightage", type=float, help="Text weightage (0.0 to 1.0)")
-        subparser.add_argument("--text_threshold", type=float, help="Text similarity threshold (0.0 to 1.0)")
-        subparser.add_argument("--visual_threshold", type=float, help="Visual similarity threshold (0.0 to 1.0)")
-        subparser.add_argument("--semantic_threshold", type=float, help="Semantic match threshold (0.0 to 1.0)")
-        subparser.add_argument("--semantic_max_phrase", type=int, help="Max words for semantic rephrasing")
+        subparser.add_argument("--txt_weightage", type=float, help="Text weightage (0.0 to 1.0). Default 0.8.")
+        subparser.add_argument("--text_threshold", type=float, help="Text similarity threshold (0.0 to 1.0). Default 0.95")
+        subparser.add_argument("--visual_threshold", type=float, help="Visual similarity threshold (0.0 to 1.0). Default 0.98")
+        subparser.add_argument("--semantic_threshold", type=float, help="Semantic match threshold (0.0 to 1.0). Default 0.8")
+        subparser.add_argument("--semantic_max_phrase", type=int, help="Max words for semantic rephrasing. Default 20")
         subparser.add_argument("--exclusion_patterns", nargs="+", help="Regex patterns to exclude (space-separated or Python list format)")
         
         if is_permanent:
@@ -268,10 +267,8 @@ Examples:
         is_ok, missing = run_health_check()
         if is_ok:
             logger.info("✅ System health is excellent. Poppler detected.")
-            # print("✅ System health is excellent. Poppler detected.")
         else:
             logger.error(f"❌ Missing dependencies: {', '.join(missing)}")
-            # print(f"❌ Missing dependencies: {', '.join(missing)}")
         sys.exit(0 if is_ok else 1)
 
     elif args.command == "compare":

@@ -52,7 +52,7 @@ class VerisiftConfig:
     enable_visual: bool = True
 
     # "Sensitivity Dial" - settings that control the sematic comparison behaviour
-    semantic_threshold: float = 0.5  # High precision for Legal, Contracts, Official documents
+    semantic_threshold: float = 0.8  # High precision for Legal, Contracts, Official documents
     semantic_max_phrase: int = 20      # Check for rephrased multi-word terms, this decides the length of the phrase that the semantic compare applies
     # enable_intent_summary: bool = True # Flag for the "Overall Page Meaning" check
 

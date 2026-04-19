@@ -45,8 +45,17 @@ def ingest_pdf(file_path: str, config: VerisiftConfig) -> DocumentData:
     # 2. Render all pages as images at the DPI specified in our Config
     # It requires 'poppler' to be installed on the system.
     logger.info(f"Rendering pages at {config.dpi} DPI...")
-    images = convert_from_path(file_path, dpi=config.dpi, poppler_path=config.poppler_path)
-    logger.debug(f"Rendered {len(images)} pages.")
+    try:
+        # This function is from the 'pdf2image' library
+        # It requires 'poppler' to be installed on the system.
+        images = convert_from_path(file_path, dpi=config.dpi, poppler_path=config.poppler_path)
+        logger.debug(f"Rendered {len(images)} pages.")
+    except ImportError:
+        logger.error(msg="pdf2image library is not installed. Please install it to use this feature.")
+    except Exception as e:
+        logger.error(f"Failed to render PDF pages: {e}")
+        
+
     
     extracted_pages = []
     
