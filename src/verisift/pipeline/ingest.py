@@ -71,13 +71,19 @@ def ingest_pdf(file_path: str, config: VerisiftConfig) -> DocumentData:
         clean_text = " ".join(clean_lines)
 
 
-        if config.ignore_patterns_flag and config.ignore_patterns:
-            logger.debug(f"Applying regex exclusions to page {i+1}")
-            for pattern in config.ignore_patterns:
-                # clean_text = re.sub(pattern, "[IGNORED]", clean_text)
-                clean_text = re.sub(pattern, \
-                        lambda m: f'VERISIFT_START {m.group(0)} [IGNORED] VERISIFT_END', 
-                        clean_text)
+        if config.ignore_patterns_flag:
+            if config.ignore_patterns and len(config.ignore_patterns) > 0:
+                logger.debug(f"Applying regex exclusions to page {i+1}")
+                for pattern in config.ignore_patterns:
+                    # clean_text = re.sub(pattern, "[IGNORED]", clean_text)
+                    clean_text = re.sub(pattern, \
+                            lambda m: f'VERISIFT_START {m.group(0)} [IGNORED] VERISIFT_END', 
+                            clean_text)
+            else:
+                logger.warning("⚠️ ignore patterns set to 'True' \
+                    but no matching patterns for exclusions are provided. \
+                    continuiing comparison without exclusions. \
+                    set '--ignore_patterns [<regex_patterns>]' to apply exclusions.")
         
         # 6. Check for 'Scanned' status
         # Why: If text length is < 10 characters, it's likely an image (triggers edge case).

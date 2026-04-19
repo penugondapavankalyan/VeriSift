@@ -38,10 +38,11 @@ class ConfigManager:
                 current_data = json.load(f)
         
         # Simple type conversion for CLI inputs
-        if value.lower() in ['true', 'false']:
-            value = value.lower() == 'true'
-        elif value.isdigit():
-            value = int(value)
+        if isinstance(value, str):
+            if value.lower() in ['true', 'false']:
+                value = value.lower() == 'true'
+            elif value.isdigit():
+                value = int(value)
             
         current_data[key] = value
         with open(self.config_file, 'w') as f:
