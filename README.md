@@ -16,6 +16,7 @@ It employs a unique Hybrid Similarity Scoring system that combines Semantic Text
   - [1. CLI Usage](#1-cli-usage)
   - [2. Library Usage](#2-library-usage)
 - [Use Cases & Recommended Settings](#-use-cases--recommended-settings)
+- [Understanding Score Calculation](#-understanding-score-calculation)
 - [Troubleshooting](#-troubleshooting)
 
 ---
@@ -603,6 +604,88 @@ config = verisift.create_config(
 
 ---
 
+## 📊 Understanding Score Calculation
+
+### Overall Score Formula
+
+VeriSift calculates the overall similarity score using a weighted combination of text and visual scores:
+
+```
+Overall Score = (text_weightage × Text Score) + ((1 - text_weightage) × Visual Score)
+```
+
+**Example:**
+- Text Score: 0.92 (92% similar)
+- Visual Score: 0.88 (88% similar)
+- Text Weightage: 0.70 (70% weight to text)
+
+```
+Overall Score = (0.70 × 0.92) + (0.30 × 0.88)
+             = 0.644 + 0.264
+             = 0.908 (90.8% overall similarity)
+```
+
+### Score Components
+
+| Component | Description | Range | Calculation Method |
+|-----------|-------------|-------|-------------------|
+| **Text Score** | Content similarity | 0.0 - 1.0 | SequenceMatcher (literal) or Cosine Similarity (semantic) |
+| **Visual Score** | Layout/image similarity | 0.0 - 1.0 | SSIM (Structural Similarity Index) |
+| **Overall Score** | Weighted combination | 0.0 - 1.0 | `(text_weight × text) + (visual_weight × visual)` |
+
+### Comparison Modes
+
+#### Literal Mode
+- Uses `difflib.SequenceMatcher` for text comparison
+- Compares character-by-character
+- Best for: Exact matching, legal documents, compliance
+
+#### Semantic Mode
+- Uses AI embeddings (SentenceTransformers)
+- Compares meaning using cosine similarity
+- Best for: Detecting paraphrasing, content changes
+
+### Match Determination
+
+A document pair is considered a **match** when:
+
+```python
+overall_score >= text_threshold  # Default: 0.95 (95%)
+```
+
+**Example Scenarios:**
+
+| Text Score | Visual Score | Text Weight | Overall Score | Threshold | Match? |
+|------------|--------------|-------------|---------------|-----------|--------|
+| 0.98 | 0.95 | 0.80 | 0.974 | 0.95 | ✅ Yes |
+| 0.92 | 0.88 | 0.70 | 0.908 | 0.95 | ❌ No |
+| 0.96 | 0.85 | 0.50 | 0.905 | 0.90 | ✅ Yes |
+
+### Adjusting Weightage
+
+**Text-Heavy Documents** (reports, contracts):
+```python
+config = verisift.create_config(
+    text_weightage=0.80  # 80% text, 20% visual
+)
+```
+
+**Visual-Heavy Documents** (designs, brochures):
+```python
+config = verisift.create_config(
+    text_weightage=0.30  # 30% text, 70% visual
+)
+```
+
+**Balanced** (general documents):
+```python
+config = verisift.create_config(
+    text_weightage=0.50  # 50% text, 50% visual
+)
+```
+
+---
+
 ## 🔧 Troubleshooting
 
 ### Common Issues
@@ -649,3 +732,4 @@ Higher DPI values increase processing time but improve image clarity in reports 
 ## 📧 Support
 
 [Support Information]
+
