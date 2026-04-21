@@ -8,39 +8,90 @@ import re
 
 from diff_match_patch import diff_match_patch
 
-try:
-    from sentence_transformers import SentenceTransformer, util
-    import torch
-    HAS_NLP = True
-except ImportError:
-    HAS_NLP = False
+# try:
+#     from sentence_transformers import SentenceTransformer, util
+#     import torch
+#     HAS_NLP = True
+# except ImportError:
+#     HAS_NLP = False
 
 logger = logging.getLogger(__name__)
+# _model = None
+
+# def get_nlp_model():
+#     global _model
+#     if _model is None and HAS_NLP:
+#         logger.info("Loading AI model for Semantic Analysis...")
+#         _model = SentenceTransformer('all-MiniLM-L6-v2', local_files_only=True)
+#     return _model
+
+
+
+_HAS_NLP = None  # Tri-state: None (unchecked), True, False
+_NLP_IMPORT_ERROR = None
 _model = None
 
+def _check_nlp_availability():
+    """Check if NLP dependencies are available (cached check)."""
+    global _HAS_NLP, _NLP_IMPORT_ERROR
+    if _HAS_NLP is None:
+        try:
+            # Lazy import - only happens when semantic mode is used
+            from sentence_transformers import SentenceTransformer, util
+            import torch
+            _HAS_NLP = True
+        except ImportError as e:
+            _HAS_NLP = False
+            _NLP_IMPORT_ERROR = str(e)
+    return _HAS_NLP
+
 def get_nlp_model():
+    """Lazy load the NLP model only when semantic mode is used."""
     global _model
-    if _model is None and HAS_NLP:
+    if not _check_nlp_availability():
+        return None
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
         logger.info("Loading AI model for Semantic Analysis...")
         _model = SentenceTransformer('all-MiniLM-L6-v2', local_files_only=True)
     return _model
+
+
 
 def _run_literal_comparison(text_a, text_b):
     """Word-to-word logic using SequenceMatcher."""
     matcher = difflib.SequenceMatcher(None, text_a, text_b)
     return matcher.ratio()
 
+# def _run_semantic_comparison(text_a, text_b):
+#     """Intent-based logic using AI embeddings."""
+#     if not HAS_NLP:
+#         raise ImportError("Semantic mode requires NLP extras. Run 'pip install verisift[nlp]' to install dependencies needed for semantic mode.")
+#         # logger.error("NLP libraries not found. Falling back to Literal mode.")
+#         # return _run_literal_comparison(text_a, text_b)
+    
+#     model = get_nlp_model()
+#     emb1 = model.encode(text_a, convert_to_tensor=True)
+#     emb2 = model.encode(text_b, convert_to_tensor=True)
+#     return util.pytorch_cos_sim(emb1, emb2).item()
+
 def _run_semantic_comparison(text_a, text_b):
     """Intent-based logic using AI embeddings."""
-    if not HAS_NLP:
-        raise ImportError("Semantic mode requires NLP extras. Run 'pip install verisift[nlp]' to install dependencies needed for semantic mode.")
-        # logger.error("NLP libraries not found. Falling back to Literal mode.")
-        # return _run_literal_comparison(text_a, text_b)
+    if not _check_nlp_availability():
+        error_msg = "Semantic mode requires NLP extras. Run 'pip install verisift[nlp]' to install dependencies."
+        if _NLP_IMPORT_ERROR:
+            error_msg += f"\nOriginal error: {_NLP_IMPORT_ERROR}"
+        raise ImportError(error_msg)
+    
+    # Import here to avoid loading at module level
+    from sentence_transformers import util
+    import torch
     
     model = get_nlp_model()
     emb1 = model.encode(text_a, convert_to_tensor=True)
     emb2 = model.encode(text_b, convert_to_tensor=True)
     return util.pytorch_cos_sim(emb1, emb2).item()
+
 
 
 def _generate_diff_html(text_expected, text_actual, config: VerisiftConfig, use_semantic=False):
@@ -68,7 +119,8 @@ def _generate_diff_html(text_expected, text_actual, config: VerisiftConfig, use_
         semantic_matches = set()
         
         # Semantic AI Logic
-        if use_semantic and HAS_NLP:
+        if use_semantic and _check_nlp_availability():
+            import torch
             model = get_nlp_model()
             to_compare_exp, to_compare_act, pair_indices = [], [], []
 

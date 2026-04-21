@@ -4,15 +4,17 @@ import os
 import logging
 import re
 import ast
-from typing import Optional
+from typing import Any, Optional, Dict
 from io import StringIO
 import tokenize
+from verisift.config import VerisiftConfig
 
 # Internal Imports
 from .config import VerisiftConfig
-from .core import Comparator
+from .api import compare_pdfs, display_config, CONFIG_KEY_MAPPING
 from .utils.health import run_health_check
 from .utils.config_manager import ConfigManager
+from .api import validate_float_0_to_1, validate_int_1_to_100, validate_int_50_to_300
 from .pipeline.report import generate_html_report
 
 # Initialize Logger
@@ -165,7 +167,7 @@ def _parse_exclusion_patterns(val) -> list:
         logger.warning("Failed to parse exclusion patterns as a list of string literals")
         return [cleaned]
 
-    lowered = cleaned[:2].lower()
+    lowered: str = cleaned[:2].lower()
     if lowered in ('r"', "r'"):
         return [_strip_string_literal(cleaned)]
     if cleaned.startswith(('"', "'")):
@@ -182,7 +184,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  verisift compare --actual a.pdf --expected e.pdf --mode semantic --dpi 150
+  verisift compare --actual "a.pdf" --expected "e.pdf" --mode semantic --dpi 150
   verisift set-config --popplerpath "C:\\Program Files\\poppler\\Library\\bin"
   verisift display-config
   verisift health-check
@@ -196,20 +198,20 @@ Examples:
     # This ensures both 'compare' and 'set-config' share the same flags
     def add_config_args(subparser, is_permanent=False):
         subparser.add_argument("--mode", choices=["literal", "semantic"], help="Comparison mode. Default literal")
-        subparser.add_argument("--enable_visual", choices=["true", "false"], help="Enable visual comparison. Default True")
-        subparser.add_argument("--dpi", type=int, help="Rendering DPI (50-300). Default 150.")
+        subparser.add_argument("--enable_visual", choices=["true", "false", "True", "False"], help="Enable visual comparison. Default True")
+        subparser.add_argument("--dpi", type=validate_int_50_to_300, help="Rendering DPI (50-300). Default 150.")
         subparser.add_argument("--outputdir", help="Output directory path")
         subparser.add_argument("--reportname", help="Custom HTML report filename")
         subparser.add_argument("--popplerpath", help="Path to poppler/bin")
-        subparser.add_argument("--txt_weightage", type=float, help="Text weightage (0.0 to 1.0). Default 0.8.")
-        subparser.add_argument("--text_threshold", type=float, help="Text similarity threshold (0.0 to 1.0). Default 0.95")
-        subparser.add_argument("--visual_threshold", type=float, help="Visual similarity threshold (0.0 to 1.0). Default 0.98")
-        subparser.add_argument("--semantic_threshold", type=float, help="Semantic match threshold (0.0 to 1.0). Default 0.8")
-        subparser.add_argument("--semantic_max_phrase", type=int, help="Max words for semantic rephrasing. Default 20")
+        subparser.add_argument("--text_weightage", type=validate_float_0_to_1, help="Text weightage (0.0 to 1.0). Default 0.8.")
+        subparser.add_argument("--text_threshold", type=validate_float_0_to_1, help="Text similarity threshold (0.0 to 1.0). Default 0.95")
+        subparser.add_argument("--visual_threshold", type=validate_float_0_to_1, help="Visual similarity threshold (0.0 to 1.0). Default 0.98")
+        subparser.add_argument("--semantic_threshold", type=validate_float_0_to_1, help="Semantic match threshold (0.0 to 1.0). Default 0.8")
+        subparser.add_argument("--semantic_max_phrase", type=validate_int_1_to_100, help="Max words for semantic rephrasing. Default 20")
         subparser.add_argument("--exclusion_patterns", nargs="+", help="Regex patterns to exclude (space-separated or Python list format)")
         
         if is_permanent:
-            subparser.add_argument("--enable_exclusions", choices=["true", "false"], help="Enable/disable regex ignore patterns")
+            subparser.add_argument("--enable_exclusions", choices=["true", "false", "True", "False"], help="Enable/disable regex ignore patterns")
         else:
             subparser.add_argument("--enable_exclusions", action="store_true", help="Enable ignore patterns for this run")
 
@@ -235,21 +237,21 @@ Examples:
     args = parser.parse_args()
 
     # Mapping CLI arg names to VerisiftConfig attribute names
-    config_mapping = {
-        "mode": "comparison_mode",
-        "enable_visual": "enable_visual",
-        "dpi": "dpi",
-        "outputdir": "output_dir",
-        "reportname": "report_name",
-        "popplerpath": "poppler_path",
-        "txt_weightage": "txt_weightage",
-        "text_threshold": "text_threshold",
-        "visual_threshold": "visual_threshold",
-        "semantic_threshold": "semantic_threshold",
-        "semantic_max_phrase": "semantic_max_phrase",
-        "enable_exclusions": "ignore_patterns_flag",
-        "exclusion_patterns": "ignore_patterns"
-    }
+    # config_mapping = {
+    #     "mode": "comparison_mode",
+    #     "enable_visual": "enable_visual",
+    #     "dpi": "dpi",
+    #     "outputdir": "output_dir",
+    #     "reportname": "report_name",
+    #     "popplerpath": "poppler_path",
+    #     "txt_weightage": "txt_weightage",
+    #     "text_threshold": "text_threshold",
+    #     "visual_threshold": "visual_threshold",
+    #     "semantic_threshold": "semantic_threshold",
+    #     "semantic_max_phrase": "semantic_max_phrase",
+    #     "enable_exclusions": "ignore_patterns_flag",
+    #     "exclusion_patterns": "ignore_patterns"
+    # }
 
     # listing out cli keys which accepts only bool values
     bool_cli_key = ["enable_exclusions", "enable_visual"]
@@ -272,10 +274,10 @@ Examples:
         sys.exit(0 if is_ok else 1)
 
     elif args.command == "compare":
-        config = cfg_mgr.load_user_config()
+        config: VerisiftConfig = cfg_mgr.load_user_config()
         
         # Apply one-off overrides from CLI
-        for cli_key, attr_key in config_mapping.items():
+        for cli_key, attr_key in CONFIG_KEY_MAPPING.items():
             val = getattr(args, cli_key, None)
             if val is not None:
                 # Handle complex regex parsing
@@ -292,8 +294,7 @@ Examples:
 
         print(f"[*] Analyzing: {os.path.basename(args.actual)} vs {os.path.basename(args.expected)}")
         try:
-            comparator = Comparator(config)
-            report = comparator.compare(args.actual, args.expected)
+            report = compare_pdfs(args.actual, args.expected, config=config)
             
             os.makedirs(config.output_dir, exist_ok=True)
             report_path = os.path.join(config.output_dir, config.report_name)
@@ -306,14 +307,14 @@ Examples:
             sys.exit(1)
 
     elif args.command == "display-config":
-        config = cfg_mgr.load_user_config()
         print("\n--- Current Configuration (User + Defaults) ---")
-        for k, v in vars(config).items():
+        current_config: Dict[str, Any] = display_config()
+        for k, v in current_config.items():
             print(f"{k:25}: {v}")
 
     elif args.command == "set-config":
         updated = False
-        for cli_key, config_key in config_mapping.items():
+        for cli_key, config_key in CONFIG_KEY_MAPPING.items():
             val = getattr(args, cli_key, None)
             if val is not None:
                 # Handle complex regex parsing
@@ -337,7 +338,7 @@ Examples:
             logger.info("✅ Configuration reset to factory defaults.")
             # print("✅ Configuration reset to factory defaults.")
         else:
-            logger.info("ℹ️ Already at default settings.")
+            logger.info("ℹ️  Already at default settings.")
 
 if __name__ == "__main__":
     main()
