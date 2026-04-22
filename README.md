@@ -1,8 +1,11 @@
 # VeriSift
 
+> **VeriSift** = **Verify** + **Sift** (to examine carefully and separate)
+> *Verify by sifting through every detail of your documents*
+
 ### **`Precise PDF Audits. Private by Design`**
 
-**VeriSift** is a professional-grade, local-first PDF comparison engine designed for developers and privacy-conscious organizations. Unlike cloud-based tools that require sensitive documents to be uploaded to external servers, Verisift runs entirely on your local machine.
+**VeriSift** is a professional-grade, local-first PDF comparison engine designed for developers and privacy-conscious organizations. Unlike cloud-based tools that require sensitive documents to be uploaded to external servers, VeriSift runs entirely on your local machine.
 
 It employs a unique Hybrid Similarity Scoring system that combines Semantic Text Analysis (to detect meaning changes) with Structural Visual Diffing (to catch layout and image shifts). Whether integrated as a Python library or run through a streamlined CLI, Verisift provides high-fidelity, interactive HTML reports that turn complex document audits into a clear, actionable experience. VeriSift is ideal for developers building document validation workflows, QA teams verifying layout consistency, or security teams ensuring no unauthorized changes occur in critical documents. VeriSift uses `all-MiniLM-L6-v2` for semantic comparisons.
 
@@ -723,13 +726,131 @@ Higher DPI values increase processing time but improve image clarity in reports 
 
 ## 📝 License
 
-[Your License Here]
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+VeriSift is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+**Key Points:**
+- ✅ Free to use, modify, and distribute
+- ✅ Source code must remain open
+- ✅ Derivative works must use GPL-3.0
+- ✅ No warranty provided
+
+For the full license text, see the [LICENSE](LICENSE) file or visit <https://www.gnu.org/licenses/gpl-3.0.html>.
 
 ## 🤝 Contributing
 
-[Contributing Guidelines]
+We welcome contributions to VeriSift! Whether you're fixing bugs, adding features, improving documentation, or reporting issues, your help is appreciated.
+
+### How to Contribute
+
+#### Reporting Issues
+- **Bug Reports**: Use GitHub Issues to report bugs. Include:
+  - VeriSift version (`pip show verisift`)
+  - Python version
+  - Operating system
+  - Steps to reproduce
+  - Expected vs actual behavior
+  - Sample PDFs (if possible)
+
+- **Feature Requests**: Describe the feature, use case, and potential implementation approach
+
+#### Contributing Code
+
+1. **Fork the Repository**
+   ```bash
+   git clone https://github.com/yourusername/verisift.git
+   cd verisift
+   ```
+
+2. **Create a Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   # or
+   git checkout -b fix/your-bug-fix
+   ```
+
+3. **Set Up Development Environment**
+   ```bash
+   pip install -e ".[nlp,dev]"  # Install in editable mode with dev dependencies
+   ```
+
+4. **Make Your Changes**
+   - Follow existing code style
+   - Add tests for new features
+   - Update documentation as needed
+   - Ensure all tests pass
+
+5. **Run Tests**
+   ```bash
+   pytest tests/
+   ```
+
+6. **Commit Your Changes**
+   ```bash
+   git add .
+   git commit -m "feat: add new feature" # Use conventional commits
+   ```
+
+7. **Push and Create Pull Request**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+### Development Guidelines
+
+- **Code Style**: Follow PEP 8 guidelines
+- **Testing**: Write unit tests for new functionality
+- **Documentation**: Update README and docstrings
+- **Commit Messages**: Use [Conventional Commits](https://www.conventionalcommits.org/)
+  - `feat:` for new features
+  - `fix:` for bug fixes
+  - `docs:` for documentation
+  - `refactor:` for code refactoring
+  - `test:` for test additions/changes
+
+### Areas for Contribution
+
+- 🐛 Bug fixes and performance improvements
+- ✨ New comparison algorithms or modes
+- 📊 Enhanced reporting features
+- 🌐 Internationalization support
+- 📚 Documentation improvements
+- 🧪 Test coverage expansion
+- 🎨 UI/UX improvements for HTML reports
+
+### Code of Conduct
+
+Please be respectful and constructive in all interactions. We're committed to providing a welcoming and inclusive environment for all contributors.
+
+---
 
 ## 📧 Support
 
-[Support Information]
+### Getting Help
+
+#### Documentation
+- **README**: Comprehensive usage guide (you're reading it!)
+- **Examples**: See the [Library Examples](#2-library-usage) section
+
+#### Community Support
+
+- **GitHub Issues**: [Report bugs or request features](https://github.com/penugondapavankalyan/verisift/issues)
+
+### System Requirements
+
+- **Python**: 3.8 or higher
+- **Poppler**: Required for PDF rendering
+- **Memory**: Minimum 2GB RAM (4GB+ recommended for large PDFs)
+- **Storage**: Varies based on PDF size and DPI settings
+
+### Professional Support
+
+For enterprise support, custom integrations, or consulting services, please contact the maintainers through GitHub.
+
+---
+
+**Made with ❤️ for developers who value privacy and precision**
 
