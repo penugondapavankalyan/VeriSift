@@ -51,8 +51,9 @@ def get_nlp_model():
     if not _check_nlp_availability():
         return None
     if _model is None:
-        from sentence_transformers import SentenceTransformer
         logger.info("Loading AI model for Semantic Analysis...")
+        from sentence_transformers import SentenceTransformer
+        logger.info("Loaded AI model for Semantic Analysis successfully!!!")
         _model = SentenceTransformer('all-MiniLM-L6-v2', local_files_only=True)
     return _model
 
@@ -220,6 +221,8 @@ def compare_text(text_a: str, text_b: str, config: VerisiftConfig):
     logger.info(f"Processing text comparison: Mode={config.comparison_mode}")
 
     if config.ignore_patterns_flag==True and config.ignore_patterns:
+        logger.info("Applying ignore patterns...")
+
         clean_txt_a = re.sub(r'(VERISIFT_START)(.*?)(VERISIFT_END)', '' , text_a, re.IGNORECASE)
         clean_txt_b = re.sub(r'(VERISIFT_START)(.*?)(VERISIFT_END)', '' , text_b, re.IGNORECASE)
         # 1. Scores
@@ -233,6 +236,7 @@ def compare_text(text_a: str, text_b: str, config: VerisiftConfig):
     # primary_score = sem_score if config.comparison_mode == "semantic" else lit_score
 
     # 2. ALWAYS generate the Standard Literal HTML (for the main Text Diff tab)
+    logger.info("Generating literal differences...")
     lit_exp_html, lit_act_html = _generate_diff_html(text_a, text_b, config, use_semantic=False)
 
     # 3. CONSTRUCT THE RESULT

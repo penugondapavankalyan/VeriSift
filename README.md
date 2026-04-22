@@ -107,7 +107,7 @@ VeriSift supports two primary usage modes:
 | `--visual_threshold` | float | 0.0 - 1.0 | 0.98 | Visual similarity threshold |
 | `--semantic_threshold` | float | 0.0 - 1.0 | 0.80 | Semantic match threshold (semantic mode only) |
 | `--text_weightage` | float | 0.0 - 1.0 | 0.80 | Text weight in overall score (visual = 1 - text) |
-| `--dpi` | integer | 50 - 300 | 150 | PDF rendering quality |
+| `--dpi` | integer | 50 - 300 | 75 | PDF rendering quality |
 | `--enable_visual` | boolean | `true`, `false` | `true` | Enable/disable visual comparison |
 | `--enable_exclusions` | boolean | `true`, `false` | `false` | Enable regex pattern exclusions. Use `--enable_exclusions` while using it with `comapre`. use `--enable_exclusions true` or `--enable_exclusions false` while using it with `set-config`. |  
 | `--exclusion_patterns` | list | - | `[]` | Regex patterns to ignore |
@@ -363,7 +363,7 @@ import os
 config = verisift.create_config(
     mode="literal",
     text_threshold=0.95,
-    dpi=150
+    dpi=75
 )
 
 # Create reusable comparator
@@ -413,7 +413,7 @@ verisift.set_configs(
     mode="semantic",
     text_threshold=0.92,
     visual_threshold=0.95,
-    dpi=180,
+    dpi=100,
     outputdir="\path\to\generated\report\folder\comparison_reports",
     enable_exclusions=True,
     exclusion_patterns=[

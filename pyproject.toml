@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "verisift"
-version = "1.0"
+version = "0.1.0"
 description = "Precise PDF Audits. Private by Design."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -29,4 +29,4 @@ nlp = [
 where = ["src"]
 
 [project.scripts]
-verisift = "verisift.cli:main" # Placeholder if you add a CLI entry point later
+verisift = "verisift.cli:main" 

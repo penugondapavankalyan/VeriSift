@@ -31,7 +31,7 @@ class VerisiftConfig:
     # Rendering settings
     # --- Ingestion & Rendering ---
     # int: Dots Per Inch
-    dpi: int = 150  # Lower for speed, higher for precision (max 300)
+    dpi: int = 75  # Lower for speed, higher for precision (max 300)
     
     # Exclusions
     # list: Uses Regex patterns to strip dynamic text (dates, IDs) before comparison

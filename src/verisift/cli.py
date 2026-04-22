@@ -199,7 +199,7 @@ Examples:
     def add_config_args(subparser, is_permanent=False):
         subparser.add_argument("--mode", choices=["literal", "semantic"], help="Comparison mode. Default literal")
         subparser.add_argument("--enable_visual", choices=["true", "false", "True", "False"], help="Enable visual comparison. Default True")
-        subparser.add_argument("--dpi", type=validate_int_50_to_300, help="Rendering DPI (50-300). Default 150.")
+        subparser.add_argument("--dpi", type=validate_int_50_to_300, help="Rendering DPI (50-300). Default 75.")
         subparser.add_argument("--outputdir", help="Output directory path")
         subparser.add_argument("--reportname", help="Custom HTML report filename")
         subparser.add_argument("--popplerpath", help="Path to poppler/bin")

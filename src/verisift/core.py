@@ -53,7 +53,7 @@ class Comparator:
         # Step C: Create required folders (Environment check)
         self._initialize_environment()
         
-        logger.info("-----------------Verisift Comparator initialized and ready-----------------")
+        logger.info("\n\n-----------------Verisift Comparator initialized and ready-----------------")
 
     def _initialize_environment(self):
         """
@@ -230,8 +230,10 @@ class Comparator:
             
             # --- A. Text Analysis ---
             if page_a and page_b:
+                # logger.info(f"Performing text comparison on page {i+1}...")
                 text_res = compare_text(page_a.clean_text, page_b.clean_text, self.config)
                 if self.config.enable_visual:
+                    logger.info(f"Performing visual comparison...")
                     vis_res = compare_visual(page_a.image, page_b.image, self.config)
                 else:
                     vis_res = None

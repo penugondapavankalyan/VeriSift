@@ -35,11 +35,13 @@ def compare_visual(image_a: np.ndarray, image_b: np.ndarray, config: VerisiftCon
     image_b_aligned = _align_images(image_a, image_b)
     if image_a.shape != image_b_aligned.shape:
         image_b_aligned = cv2.resize(image_b_aligned, (image_a.shape[1], image_a.shape[0]))
+    # logger.info("Image alignment done...")
 
     # 2. SSIM Score Calculation (Grayscale)
     gray_a = cv2.cvtColor(image_a, cv2.COLOR_BGR2GRAY)
     gray_b = cv2.cvtColor(image_b_aligned, cv2.COLOR_BGR2GRAY)
     score, _ = ssim(gray_a, gray_b, full=True)
+    # logger.info("SSIM score calculation done...")
 
     # 3. COLOR HEATMAP GENERATION
     # Create a faded version of the original image as a background context
@@ -64,6 +66,7 @@ def compare_visual(image_a: np.ndarray, image_b: np.ndarray, config: VerisiftCon
     # BGR format: Red is (0, 0, 255), Blue is (255, 0, 0)
     canvas[added > 0] = [0, 0, 255]    # Additions in Red
     canvas[missing > 0] = [255, 0, 0]  # Missing in Blue
+    # logger.info(f"heatmap generation done...")
 
     # 4. Packaging
     is_match = score >= config.visual_threshold
