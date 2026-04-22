@@ -16,8 +16,8 @@ def check_system_dependencies(ocr_enabled: bool = False):
         "pdftocairo": "Poppler (required for PDF rendering)"
     }
     
-    if ocr_enabled:
-        dependencies["tesseract"] = "Tesseract OCR (required for scanned PDFs)"
+    # if ocr_enabled:
+    #     dependencies["tesseract"] = "Tesseract OCR (required for scanned PDFs)"
 
     missing = []
     for cmd, desc in dependencies.items():

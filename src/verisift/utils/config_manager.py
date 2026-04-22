@@ -1,4 +1,7 @@
 # VeriSift/src/verisift/utils/config_manager.py
+from typing import Any
+
+
 import json
 import os
 from pathlib import Path
@@ -32,20 +35,21 @@ class ConfigManager:
 
     def set_config(self, key, value):
         """Saves a specific setting permanently."""
-        current_data = {}
+        current_data: dict[Any, Any] = {}
         if self.config_file.exists():
-            with open(self.config_file, 'r') as f:
+            with open(file=self.config_file, mode='r') as f:
                 current_data = json.load(f)
         
         # Simple type conversion for CLI inputs
-        if value.lower() in ['true', 'false']:
-            value = value.lower() == 'true'
-        elif value.isdigit():
-            value = int(value)
+        if isinstance(value, str):
+            if value.lower() in ['true', 'false']:
+                value = value.lower() == 'true'
+            elif value.isdigit():
+                value = int(value)
             
         current_data[key] = value
-        with open(self.config_file, 'w') as f:
-            json.dump(current_data, f, indent=4)
+        with open(file=self.config_file, mode='w') as f:
+            json.dump(obj=current_data, fp=f, indent=4)
 
     def reset_to_defaults(self):
         """Deletes the user config file to restore factory settings."""

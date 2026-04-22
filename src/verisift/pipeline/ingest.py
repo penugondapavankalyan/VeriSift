@@ -45,8 +45,17 @@ def ingest_pdf(file_path: str, config: VerisiftConfig) -> DocumentData:
     # 2. Render all pages as images at the DPI specified in our Config
     # It requires 'poppler' to be installed on the system.
     logger.info(f"Rendering pages at {config.dpi} DPI...")
-    images = convert_from_path(file_path, dpi=config.dpi, poppler_path=config.poppler_path)
-    logger.debug(f"Rendered {len(images)} pages.")
+    try:
+        # This function is from the 'pdf2image' library
+        # It requires 'poppler' to be installed on the system.
+        images = convert_from_path(file_path, dpi=config.dpi, poppler_path=config.poppler_path)
+        logger.debug(f"Rendered {len(images)} pages.")
+    except ImportError:
+        logger.error(msg="pdf2image library is not installed. Please install it to use this feature.")
+    except Exception as e:
+        logger.error(f"Failed to render PDF pages: {e}")
+        
+
     
     extracted_pages = []
     
@@ -72,9 +81,18 @@ def ingest_pdf(file_path: str, config: VerisiftConfig) -> DocumentData:
 
 
         if config.ignore_patterns_flag:
-            logger.debug(f"Applying regex exclusions to page {i+1}")
-            for pattern in config.ignore_patterns:
-                clean_text = re.sub(pattern, "[IGNORED]", clean_text)
+            if config.ignore_patterns and len(config.ignore_patterns) > 0:
+                logger.debug(f"Applying regex exclusions to page {i+1}")
+                for pattern in config.ignore_patterns:
+                    # clean_text = re.sub(pattern, "[IGNORED]", clean_text)
+                    clean_text = re.sub(pattern, \
+                            lambda m: f'VERISIFT_START {m.group(0)} [IGNORED] VERISIFT_END', 
+                            clean_text)
+            else:
+                logger.warning("⚠️ ignore patterns set to 'True' \
+                    but no matching patterns for exclusions are provided. \
+                    continuiing comparison without exclusions. \
+                    set '--ignore_patterns [<regex_patterns>]' to apply exclusions.")
         
         # 6. Check for 'Scanned' status
         # Why: If text length is < 10 characters, it's likely an image (triggers edge case).

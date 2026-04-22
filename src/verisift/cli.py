@@ -1,160 +1,344 @@
-# VeriSift/src/verisift/cli.py
 import argparse
 import sys
 import os
-import subprocess
 import logging
-from typing import Optional
+import re
+import ast
+from typing import Any, Optional, Dict
+from io import StringIO
+import tokenize
+from verisift.config import VerisiftConfig
 
 # Internal Imports
 from .config import VerisiftConfig
-from .core import Comparator
+from .api import compare_pdfs, display_config, CONFIG_KEY_MAPPING
 from .utils.health import run_health_check
 from .utils.config_manager import ConfigManager
+from .api import validate_float_0_to_1, validate_int_1_to_100, validate_int_50_to_300
 from .pipeline.report import generate_html_report
 
 # Initialize Logger
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
+def _strip_string_literal(token_string: str) -> str:
+    """
+    Convert a Python-style string literal token into its content while preserving
+    raw-string backslashes exactly as typed.
+    
+    For raw strings (r'...' or r"..."), returns the content with backslashes preserved.
+    For regular strings, returns the content as-is (Python tokenizer already handles escapes).
+    """
+    token_string = token_string.strip()
+    
+    # Check if it's a raw string
+    is_raw = False
+    i = 0
+    while i < len(token_string) and token_string[i].lower() in ("r", "u", "b", "f"):
+        if token_string[i].lower() == 'r':
+            is_raw = True
+        i += 1
+
+    if i >= len(token_string):
+        return token_string
+
+    quote = token_string[i]
+    if quote not in ("'", '"'):
+        return token_string
+
+    # Handle triple-quoted strings
+    if token_string[i:i + 3] in ("'''", '"""'):
+        q = token_string[i:i + 3]
+        content = token_string[i + 3:-3] if token_string.endswith(q) else token_string
+        return content
+
+    # Handle single/double quoted strings
+    content = token_string[i + 1:-1] if token_string.endswith(quote) else token_string
+    
+    # For raw strings, the content is already correct (backslashes preserved)
+    # For regular strings, Python's tokenizer has already processed escape sequences
+    return content
+
+
+def _manual_parse_patterns(list_content: str) -> list:
+    """
+    Manually parse string literals from list content when tokenizer fails.
+    Handles both single and double quoted strings with r-prefix support.
+    """
+    patterns = []
+    i = 0
+    while i < len(list_content):
+        # Skip whitespace and commas
+        while i < len(list_content) and list_content[i] in ' ,\t\n':
+            i += 1
+        
+        if i >= len(list_content):
+            break
+        
+        # Check for r-prefix
+        is_raw = False
+        if i < len(list_content) and list_content[i].lower() == 'r':
+            is_raw = True
+            i += 1
+        
+        # Determine quote type
+        if i >= len(list_content):
+            break
+            
+        quote_char = list_content[i]
+        if quote_char not in ('"', "'"):
+            i += 1
+            continue
+        
+        # Find matching closing quote
+        i += 1
+        start = i
+        while i < len(list_content):
+            if list_content[i] == '\\' and not is_raw:
+                # Skip escaped character
+                i += 2
+                continue
+            elif list_content[i] == quote_char:
+                # Found closing quote
+                pattern = list_content[start:i]
+                patterns.append(pattern)
+                i += 1
+                break
+            else:
+                i += 1
+    
+    return patterns
+
+
+def _tokenize_pattern_list(list_content: str) -> list:
+    """
+    Tokenize the inner content of a Python-style list and extract only string
+    literal items without splitting on commas inside regex quantifiers.
+    """
+    patterns = []
+
+    try:
+        tokens = tokenize.generate_tokens(StringIO(list_content).readline)
+        for tok_type, tok_string, _, _, _ in tokens:
+            if tok_type == tokenize.STRING:
+                stripped = _strip_string_literal(tok_string)
+                patterns.append(stripped)
+                # print(f"  Tokenized pattern: {stripped}")
+    except tokenize.TokenError as e:
+        logger.warning(f"Tokenize error: {e}. Attempting manual parsing.")
+        # Fallback: manually parse string literals
+        patterns = _manual_parse_patterns(list_content)
+        for p in patterns:
+            print(f"  Manually parsed pattern: {p}")
+
+    return patterns
+
+
+def _parse_exclusion_patterns(val) -> list:
+    """
+    Parse CLI exclusion patterns while preserving regex text exactly as typed.
+    Handles both single string and list inputs from argparse.
+    """
+    # If val is already a list (from nargs="+"), process the first element
+    # which should be the Python list string format
+    if isinstance(val, list):
+        if len(val) == 0:
+            return []
+        # If it's a list with one element that looks like a Python list, parse it
+        if len(val) == 1 and isinstance(val[0], str):
+            val = val[0]
+        else:
+            # Multiple space-separated patterns - return as-is
+            return val
+    
+    if not isinstance(val, str):
+        return [val]
+
+    cleaned = val.strip()
+
+    if cleaned.startswith('[') and cleaned.endswith(']'):
+        inner = cleaned[1:-1].strip()
+        if not inner:
+            return []
+        parsed = _tokenize_pattern_list(inner)
+        if parsed:
+            return parsed
+
+        logger.warning("Failed to parse exclusion patterns as a list of string literals")
+        return [cleaned]
+
+    lowered: str = cleaned[:2].lower()
+    if lowered in ('r"', "r'"):
+        return [_strip_string_literal(cleaned)]
+    if cleaned.startswith(('"', "'")):
+        return [_strip_string_literal(cleaned)]
+
+    return [cleaned]
+
 def main():
-    # Initialize the Configuration Manager for ~/.verisift/config.json
     cfg_mgr = ConfigManager()
     
     parser = argparse.ArgumentParser(
         prog="verisift",
-        description="Verisift: Professional PDF Comparison Engine",
+        description="VeriSift: Professional PDF Comparison Engine",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  verisift run actual.pdf expected.pdf
-  verisift run a.pdf e.pdf --mode semantic --outdir ./audits
-  verisift set-config --mode semantic --dpi 300
-  verisift ui
+  verisift compare --actual "a.pdf" --expected "e.pdf" --mode semantic --dpi 150
+  verisift set-config --popplerpath "C:\\Program Files\\poppler\\Library\\bin"
+  verisift display-config
+  verisift health-check
         """
     )
-
+    
+    parser.add_argument("-v", "--version", action="version", version="VeriSift v1.0")
     subparsers = parser.add_subparsers(dest="command", help="Available Commands")
 
-    # --- COMMAND: run ---
-    run_parser = subparsers.add_parser("run", help="Compare two PDF documents")
-    run_parser.add_argument("actual", help="Path to the actual PDF file")
-    run_parser.add_argument("expected", help="Path to the expected PDF file")
-    run_parser.add_argument("--outdir", "-o", help="Directory to save the report")
-    run_parser.add_argument("--reportname", "-rn", help="Custom name for the HTML report")
-    run_parser.add_argument("--mode", choices=["literal", "semantic"], help="Override comparison mode")
-    run_parser.add_argument("--dpi", type=int, help="Override rendering DPI")
+    # --- HELPER: Common Configuration Arguments ---
+    # This ensures both 'compare' and 'set-config' share the same flags
+    def add_config_args(subparser, is_permanent=False):
+        subparser.add_argument("--mode", choices=["literal", "semantic"], help="Comparison mode. Default literal")
+        subparser.add_argument("--enable_visual", choices=["true", "false", "True", "False"], help="Enable visual comparison. Default True")
+        subparser.add_argument("--dpi", type=validate_int_50_to_300, help="Rendering DPI (50-300). Default 75.")
+        subparser.add_argument("--outputdir", help="Output directory path")
+        subparser.add_argument("--reportname", help="Custom HTML report filename")
+        subparser.add_argument("--popplerpath", help="Path to poppler/bin")
+        subparser.add_argument("--text_weightage", type=validate_float_0_to_1, help="Text weightage (0.0 to 1.0). Default 0.8.")
+        subparser.add_argument("--text_threshold", type=validate_float_0_to_1, help="Text similarity threshold (0.0 to 1.0). Default 0.95")
+        subparser.add_argument("--visual_threshold", type=validate_float_0_to_1, help="Visual similarity threshold (0.0 to 1.0). Default 0.98")
+        subparser.add_argument("--semantic_threshold", type=validate_float_0_to_1, help="Semantic match threshold (0.0 to 1.0). Default 0.8")
+        subparser.add_argument("--semantic_max_phrase", type=validate_int_1_to_100, help="Max words for semantic rephrasing. Default 20")
+        subparser.add_argument("--exclusion_patterns", nargs="+", help="Regex patterns to exclude (space-separated or Python list format)")
+        
+        if is_permanent:
+            subparser.add_argument("--enable_exclusions", choices=["true", "false", "True", "False"], help="Enable/disable regex ignore patterns")
+        else:
+            subparser.add_argument("--enable_exclusions", action="store_true", help="Enable ignore patterns for this run")
 
-    # --- COMMAND: health-check ---
-    subparsers.add_parser("health-check", help="Verify system dependencies (Poppler/Tesseract)")
-
-    # --- COMMAND: display-config ---
-    subparsers.add_parser("display-config", help="Show current global configurations")
+    # --- COMMAND: compare ---
+    compare_parser = subparsers.add_parser("compare", help="Compare two PDF documents with optional overrides")
+    compare_parser.add_argument("--actual", required=True, help="Path to actual PDF")
+    compare_parser.add_argument("--expected", required=True, help="Path to expected PDF")
+    add_config_args(compare_parser)
 
     # --- COMMAND: set-config ---
-    set_parser = subparsers.add_parser("set-config", help="Permanently update default settings")
-    set_parser.add_argument("--mode", choices=["literal", "semantic"], help="Set default comparison mode")
-    set_parser.add_argument("--dpi", type=int, help="Set default rendering DPI")
-    set_parser.add_argument("--outdir", help="Set default output directory")
+    set_parser = subparsers.add_parser("set-config", help="Update default settings permanently")
+    add_config_args(set_parser, is_permanent=True)
+
+    # --- COMMAND: health-check ---
+    subparsers.add_parser("health-check", help="Verify Poppler/Dependency status")
+
+    # --- COMMAND: display-config ---
+    subparsers.add_parser("display-config", help="Show current persistent settings")
 
     # --- COMMAND: reset-config ---
-    subparsers.add_parser("reset-config", help="Restore all settings to factory defaults")
-
-    # --- COMMAND: ui ---
-    subparsers.add_parser("ui", help="Launch the Streamlit Web Interface")
+    subparsers.add_parser("reset-config", help="Restore factory settings")
 
     args = parser.parse_args()
 
+    # Mapping CLI arg names to VerisiftConfig attribute names
+    # config_mapping = {
+    #     "mode": "comparison_mode",
+    #     "enable_visual": "enable_visual",
+    #     "dpi": "dpi",
+    #     "outputdir": "output_dir",
+    #     "reportname": "report_name",
+    #     "popplerpath": "poppler_path",
+    #     "txt_weightage": "txt_weightage",
+    #     "text_threshold": "text_threshold",
+    #     "visual_threshold": "visual_threshold",
+    #     "semantic_threshold": "semantic_threshold",
+    #     "semantic_max_phrase": "semantic_max_phrase",
+    #     "enable_exclusions": "ignore_patterns_flag",
+    #     "exclusion_patterns": "ignore_patterns"
+    # }
+
+    # listing out cli keys which accepts only bool values
+    bool_cli_key = ["enable_exclusions", "enable_visual"]
+    
     # --- ROUTING LOGIC ---
 
-    # 1. DEFAULT DASHBOARD (Just typing 'verisift')
     if args.command is None:
-        print("\n--- Verisift Engine v1.0 ---")
+        print("\n--- VeriSift Engine v1.0 ---")
         is_ok, _ = run_health_check()
-        status = "READY" if is_ok else "INCOMPLETE (run 'verisift health-check')"
-        print(f"System Health: {status}")
-        print("\nQuick Start: verisift run 'actual.pdf' 'expected.pdf'")
+        print(f"System Status: {'READY' if is_ok else 'DEPENDENCIES MISSING'}")
         parser.print_help()
         sys.exit(0)
 
-    # 2. HEALTH CHECK
-    if args.command == "health-check":
-        print("[*] Running System Dependency Check...")
+    elif args.command == "health-check":
         is_ok, missing = run_health_check()
         if is_ok:
-            print("[SUCCESS] All system dependencies (Poppler/Tesseract) are installed.")
+            logger.info("✅ System health is excellent. Poppler detected.")
         else:
-            print("[ERROR] Missing the following system tools:")
-            for item in missing:
-                print(f"  - {item}")
-            print("\nPlease install these via your OS package manager.")
+            logger.error(f"❌ Missing dependencies: {', '.join(missing)}")
         sys.exit(0 if is_ok else 1)
 
-    # 3. RUN COMPARISON
-    elif args.command == "run":
-        # Check health silently before starting
-        is_ok, missing = run_health_check()
-        if not is_ok:
-            print(f"[ERROR] Cannot run. Missing dependencies: {', '.join(missing)}")
-            sys.exit(1)
-
-        # LOAD CONFIG: Layered priority (Default < User File < CLI Flags)
-        # Using type hint for better IDE support and code clarity
+    elif args.command == "compare":
         config: VerisiftConfig = cfg_mgr.load_user_config()
         
-        # Apply CLI overrides if provided
-        if args.mode: config.comparison_mode = args.mode
-        if args.dpi: config.dpi = args.dpi
-        if args.outdir: config.output_dir = args.outdir
-        if args.reportname: config.report_name = args.reportname
+        # Apply one-off overrides from CLI
+        for cli_key, attr_key in CONFIG_KEY_MAPPING.items():
+            val = getattr(args, cli_key, None)
+            if val is not None:
+                # Handle complex regex parsing
+                if cli_key == "exclusion_patterns":
+                    val = _parse_exclusion_patterns(val)
+                    print(f"list of values for patterns: {val}")
+                
+                if cli_key in bool_cli_key:
+                    if str(val).lower() == 'true':
+                        val = True
+                    if str(val).lower() == 'false':
+                        val = False
+                setattr(config, attr_key, val)
 
-        print(f"[*] Comparing: {os.path.basename(args.actual)} vs {os.path.basename(args.expected)}")
-        print(f"[*] Config: Mode={config.comparison_mode.upper()}, DPI={config.dpi}")
-
+        print(f"[*] Analyzing: {os.path.basename(args.actual)} vs {os.path.basename(args.expected)}")
         try:
-            comparator = Comparator(config)
-            report = comparator.compare(args.actual, args.expected)
+            report = compare_pdfs(args.actual, args.expected, config=config)
             
             os.makedirs(config.output_dir, exist_ok=True)
             report_path = os.path.join(config.output_dir, config.report_name)
             
             if generate_html_report(report, report_path):
-                print(f"\n[SUCCESS] Report generated: {os.path.abspath(report_path)}")
+                logger.info(f"✅ Comparison Finished. Report generated successfully at: {os.path.abspath(report_path)}")
+                # print(f"✅ Comparison Finished. Report: {report_path}")
         except Exception as e:
-            print(f"[CRITICAL ERROR] {str(e)}")
+            logger.error(f"❌ Execution failed: {e}")
             sys.exit(1)
 
-    # 4. CONFIG MANAGEMENT
     elif args.command == "display-config":
-        current_cfg = cfg_mgr.load_user_config()
-        print("\n--- Verisift Current Settings ---")
-        for key, value in current_cfg.__dict__.items():
-            print(f"{key:20}: {value}")
-        print("")
+        print("\n--- Current Configuration (User + Defaults) ---")
+        current_config: Dict[str, Any] = display_config()
+        for k, v in current_config.items():
+            print(f"{k:25}: {v}")
 
     elif args.command == "set-config":
-        if not any([args.mode, args.dpi, args.outdir]):
-            print("[INFO] No changes specified. Use --mode, --dpi, or --outdir.")
-        else:
-            if args.mode: cfg_mgr.set_config("comparison_mode", args.mode)
-            if args.dpi: cfg_mgr.set_config("dpi", args.dpi)
-            if args.outdir: cfg_mgr.set_config("output_dir", args.outdir)
-            print("[SUCCESS] Global settings updated permanently.")
+        updated = False
+        for cli_key, config_key in CONFIG_KEY_MAPPING.items():
+            val = getattr(args, cli_key, None)
+            if val is not None:
+                # Handle complex regex parsing
+                if cli_key == "exclusion_patterns":
+                    val = _parse_exclusion_patterns(val)
+
+                if cli_key in bool_cli_key:
+                    if str(val).lower() in ['true', 'false']:
+                        val = str(val).lower() == 'true'
+                        
+                cfg_mgr.set_config(config_key, val)
+                logger.info(f"✅ Permanently set {config_key} to {val}")
+                # print(f"✅ Permanently set {config_key} to {val}")
+                updated = True
+        
+        if not updated:
+            logger.warning("⚠️ No settings provided to update.")
 
     elif args.command == "reset-config":
         if cfg_mgr.reset_to_defaults():
-            print("[SUCCESS] All settings restored to factory defaults.")
+            logger.info("✅ Configuration reset to factory defaults.")
+            # print("✅ Configuration reset to factory defaults.")
         else:
-            print("[INFO] Settings were already at default values.")
-
-    # 5. STREAMLIT UI
-    elif args.command == "ui":
-        ui_path = os.path.join(os.path.dirname(__file__), "ui", "app.py")
-        if not os.path.exists(ui_path):
-            print("[ERROR] UI module not found.")
-            sys.exit(1)
-        
-        print("[*] Launching Streamlit UI...")
-        subprocess.run(["streamlit", "run", ui_path])
+            logger.info("ℹ️  Already at default settings.")
 
 if __name__ == "__main__":
     main()

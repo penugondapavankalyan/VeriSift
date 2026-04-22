@@ -20,6 +20,7 @@
             --amber: #b07d2a; 
             --red: #c8483a; 
             --blue: #2563a8;
+            --white: #fff;
         }
 
         * { box-sizing: border-box; }
@@ -59,15 +60,31 @@
         .card-hdr-l { display: flex; align-items: center; gap: 20px; }
         .card-icon { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; background: #fff; }
         .card-title { font-size: 16px; font-weight: 700; }
+        .card-arrow { transition: transform 0.3s ease; color: var(--text3); }
+        .card.expanded .card-arrow { transform: rotate(180deg); }
         .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
         .card-body { padding: 30px; border-top: 1px solid var(--border); display: none; }
-        .card-body.vis { display: block; }
+        .card-body.vis { display: block; } 
+        .card.expanded > .card-hdr .card-arrow { 
+    transform: rotate(180deg); 
+}
+        .legend-bar { display: flex; gap: 14px; flex-wrap: wrap; padding: 15px 24px; border-bottom: 1px solid var(--border); background: var(--surface2); width: 100%; }
+        .li { display: flex; align-items: center; gap: 5px}
+        .li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+        .ld { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
         .meta-col-hd { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .mr { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dotted var(--border); font-size: 13px; }
         .mk { color: var(--text2); }
-        .mv { font-weight: 600; }
+        .mv { font-weight: 600; width: 80%; overflow-wrap: anywhere;}
+        
+        .info-icon { 
+            display: inline-flex; align-items: center; justify-content: center; 
+            width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--text3); 
+            font-size: 9px; font-family: serif; font-style: italic; font-weight: bold; 
+            color: var(--text2); cursor: help; margin-left: 4px; vertical-align: middle;
+        }
 
         .params-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
         .sc { padding: 20px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); }
@@ -89,12 +106,19 @@
         .ha { background: var(--amber); } 
         .hr { background: var(--red); }
 
-        .pg-section { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; background: var(--surface); overflow: hidden; }
-        .pg-hdr { padding: 16px 20px; display: flex; align-items: center; cursor: pointer; }
+        .pg-section { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; background: var(--surface); overflow: hidden; width: 100%; }
+        .pg-section:first-child { margin-top: 0}
+        .pg-section:last-child { margin-bottom: 0}
+        .pg-hdr { padding: 16px 20px; display: flex; align-items: center; cursor: pointer; width: 100%; justify-content: space-between;}
         .pg-num-tag { background: var(--text); color: #fff; padding: 10px 18px; border-radius: 48px; font-size: 11px; font-weight: 800; margin-right: 15px; }
         .pg-title { flex-grow: 1; font-size: 14px; font-weight: 700; }
         .pg-body { display: none; padding: 25px; border-top: 1px solid var(--border); background: #fff; }
         .pg-body.vis { display: block; }
+        .pg-hdr-left {display: flex; align-items: center; gap: 15px; min-width: 0; }
+        /* Rotates the arrow when the page section is expanded */
+        .pg-section.expanded .pg-hdr .card-arrow { transform: rotate(1deg); }
+        /* Ensure the arrow inside pg-hdr has the same transition properties */
+        .pg-hdr .card-arrow { transition: transform 0.3s ease; display: flex;align-items: center; margin-left: 10px; }
 
         .badge-group { display: flex; gap: 8px; }
         .badge { padding: 4px 15px; border-radius: 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -112,6 +136,20 @@
         .diff_sub em { background-color: #fdb8c0 !important; font-style: normal; font-weight: bold; text-decoration: line-through; color: #cf222e; }
         .diff_chg em { background-color: #fce788 !important; color: #9a6700; font-style: normal; font-weight: 700; }
         .diff_semantic { background-color: #f3e5f5 !important; color: #7b1fa2; border-bottom: 2px solid #9c27b0; font-weight: 600; }
+        .diff_semantic { background-color: #f3e5f5 !important; color: #4a148c !important; border-bottom: 2px solid #ab47bc; padding: 0 2px; border-radius: 2px; font-weight: 600; font-style: normal; }
+
+        /* FORCE visibility for all types in Semantic Mode */
+        [id^="s"] .diff_sub em, 
+        [id^="s"] .diff_add em,
+        [id^="s"] .diff_semantic { display: inline !important; visibility: visible !important; opacity: 1 !important; }
+
+        /* Amber highlight for ignored/excluded patterns */
+        .diff_excluded { background-color: #fff8e1 !important; color: #ff8f00 !important; border: 1px dashed #ffb300; 
+                    padding: 2px 4px; border-radius: 4px; font-family: monospace; cursor: help; display: inline-block; }
+
+        /* Make the [IGNORED] text look like a small tag */
+        .diff_excluded::after { font-size: 0.75em; font-weight: bold; text-transform: uppercase;
+                    opacity: 0.8; margin-left: 5px; }
 
         .tog-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         .tog-btn { padding: 8px 16px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; border-radius: 36px; }
@@ -155,41 +193,87 @@
                 <div class="card-icon">📄</div>
                 <div>
                     <div class="card-title">Document Metadata</div>
-                    <div class="card-sub">Comparative file properties and ingestion details</div>
+                    <div class="card-sub">Comparative file properties details</div>
                 </div>
             </div>
+            <div class="card-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
         </div>
-        <div class="card-body vis">
+        <div class="card-body">
             <div class="meta-grid">
                 <div>
-                    <div class="meta-col-hd">Baseline (Expected)</div>
+                    <div class="meta-col-hd">Expected / Baseline docment </div>
                     <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.expected.filename }}</span></div>
                     <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.expected.filesize }}</span></div>
+                    <div class="mr"><span class="mk">File Path</span><span class="mv"><a href="{{ metadata_comparison.expected.filepath }}">{{ metadata_comparison.expected.filepath }}</a></span></div>
+                    <div class="mr"><span class="mk">Create Date</span><span class="mv">{{ metadata_comparison.expected.createdate }}</span></div>
+                    <div class="mr"><span class="mk">Modified Date</span><span class="mv">{{ metadata_comparison.expected.modifieddate }}</span></div>
                     <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.expected.pages }}</span></div>
                     <div class="mr"><span class="mk">Creator</span><span class="mv">{{ metadata_comparison.expected.creator }}</span></div>
+                    <div class="mr"><span class="mk">Author</span><span class="mv">{{ metadata_comparison.expected.author }}</span></div>
+                    <div class="mr"><span class="mk">Encryption</span><span class="mv">{{  metadata_comparison.expected.encryption }}</span></div>
                 </div>
                 <div>
-                    <div class="meta-col-hd">Target (Actual)</div>
+                    <div class="meta-col-hd">Actual / Target document </div>
                     <div class="mr"><span class="mk">File Name</span><span class="mv">{{ metadata_comparison.actual.filename }}</span></div>
                     <div class="mr"><span class="mk">File Size</span><span class="mv">{{ metadata_comparison.actual.filesize }}</span></div>
+                    <div class="mr"><span class="mk">File Path</span><span class="mv"><a href="{{ metadata_comparison.actual.filepath }}" target="_blank">{{ metadata_comparison.actual.filepath }}</a></span></div>
+                    <div class="mr"><span class="mk">Create Date</span><span class="mv">{{ metadata_comparison.actual.createdate }}</span></div>
+                    <div class="mr"><span class="mk">Modified Date</span><span class="mv">{{ metadata_comparison.actual.modifieddate }}</span></div>
                     <div class="mr"><span class="mk">No. of Pages</span><span class="mv">{{ metadata_comparison.actual.pages }}</span></div>
                     <div class="mr"><span class="mk">Creator</span><span class="mv">{{ metadata_comparison.actual.creator }}</span></div>
+                    <div class="mr"><span class="mk">Author</span><span class="mv">{{ metadata_comparison.actual.author }}</span></div>
+                    <div class="mr"><span class="mk">Encryption</span><span class="mv">{{ metadata_comparison.actual.encryption }}</span></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
+    <div class="card expanded">
         <div class="card-hdr" onclick="toggleCard(this)">
             <div class="card-hdr-l">
                 <div class="card-icon">⚙️</div>
                 <div>
                     <div class="card-title">Comparison Parameters</div>
-                    <div class="card-sub">Confidence scores and page-wise heatmap distribution</div>
+                    <div class="card-sub">Confidence scores, configuration parameter details and page-wise heatmap distribution</div>
                 </div>
+            </div>
+            <div class="card-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
             </div>
         </div>
         <div class="card-body vis">
+
+            <div style="margin-top: 30px; margin-bottom: 30px;">
+                <div class="meta-col-hd">Configuration used for the Comparison</div>
+                <div class="meta-grid">
+                    <div>
+                        <div class="meta-col-hd"><div class="mr"><span class="mv">Parameter</span><span class="mv">Value</span></div></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Comparison Mode <span class="info-icon" title="Standard literal comparison is performed by default. If Semantic Mode is enabled, an additional NLP-based analysis is conducted to identify and display contextual differences for each page.">i</span></span><span class="mv">{{ report.configuration.get('comparison_mode', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Visual Comparison Enabled <span class="info-icon" title="Determines whether pixel-level visual analysis is performed alongside text comparison.">i</span></span><span class="mv">{{ report.configuration.get('enable_visual', false) }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Text Weightage <span class="info-icon" title="Textual score weightage in the overall score. ranges between 0 and 1. textual and visual weightage sum up to 1">i</span></span><span class="mv">{{ report.configuration.get('txt_weightage', 'N/A') }} ({{ report.configuration.get('txt_weightage', 'N/A')*100 | round(2) }}%) </span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Visual Weightage <span class="info-icon" title="Visual score weightage in the overall score. ranges between 0 and 1. caluclated by deducting text weightage from 1.">i</span></span><span class="mv">{{ (1 - (report.configuration.get('txt_weightage', 'N/A'))) | round(2) }} ({{ ((1 - (report.configuration.get('txt_weightage', 'N/A'))) | round(2))*100 }} %)</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Semantic Threshold <span class="info-icon" title="Threshold value above which the phrases are considered similar. ranges between 0 and 1.">i</span></span><span class="mv">{{ report.configuration.get('semantic_threshold', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Semantic Max Phrases <span class="info-icon" title="Decides the length of the phrase that the semantic compare applies">i</span></span><span class="mv">{{ report.configuration.get('semantic_max_phrase', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width: 80%;">Ignore Matching Text <span class="info-icon" title="Specifies whether defined exclusion patterns should be applied during the comparison process.">i</span></span><span class="mv">{{ report.configuration.get('ignore_patterns_flag', 'N/A') }}</span></div>
+                    </div>
+                    <div>
+                        <div class="meta-col-hd"><div class="mr"><span class="mv" style="width: 25%;">Parameter</span><span class="mv">Value</span></div></div>
+                        <div class="mr"><span class="mk" style="width:25%;">Text Threshold <span class="info-icon" title="Threshold value above which the phrases are considered similar. ranges between 0 and 1.">i</span></span><span class="mv">{{ report.configuration.get('text_threshold', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width:25%;">Visual Threshold <span class="info-icon" title="Threshold value above which the phrases are considered similar. ranges between 0 and 1.">i</span></span><span class="mv">{{ report.configuration.get('visual_threshold', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width:25%;">DPI <span class="info-icon" title="Lower for speed, higher for precision. ranges between 50 and 300.">i</span></span><span class="mv">{{ report.configuration.get('dpi', 'N/A') }}</span></div>
+                        <div class="mr"><span class="mk" style="width:25%;">Poppler Path <span class="info-icon" title="Location of the poppler executable. Necessary for visual comparison.">i</span></span><span class="mv"><a href="file://{{ report.configuration.get('poppler_path', 'N/A') }}">{{ report.configuration.get('poppler_path', 'N/A') }}</a></span></div>
+                        <div class="mr" style="padding-right: 20px;"><span class="mk" style="width:25%;">Matching Patterns Regex to Ignore <span class="info-icon" title="Regex patterns for exclusion during comparison">i</span></span><span class="mv" style="overflow:scroll; height: 70px; width: 80%; padding-right: 30px;">{{ report.configuration.get('ignore_patterns', 'N/A') }}</span></div>
+                    </div>
+                </div>
+
+            </div>
+
             <div class="params-grid">
                 <div class="sc">
                     <div class="sc-lbl">Overall Match</div>
@@ -201,16 +285,18 @@
                     <div class="sc-val">{{ text_score_avg }}%</div>
                     <div class="sc-bar"><div class="sc-fill bg-blue" style="width: {{ text_score_avg }}%"></div></div>
                 </div>
+                {% if report.configuration.get('enable_visual', false) %}
                 <div class="sc">
                     <div class="sc-lbl">Visual Accuracy</div>
                     <div class="sc-val">{{ visual_score_avg }}%</div>
                     <div class="sc-bar"><div class="sc-fill bg-green" style="width: {{ visual_score_avg }}%"></div></div>
                 </div>
-                {% if report.intent_score_avg is not none %}
+                {% endif %}
+                {% if report.avg_intent_score is not none %}
                     <div class="sc">
                         <div class="sc-lbl">Semantic Match</div>
-                        <div class="sc-val">{{ intent_score_avg }}%</div>
-                        <div class="sc-bar"><div class="sc-fill bg-violet" style="width: {{ intent_score_avg }}%"></div></div>
+                        <div class="sc-val">{{ report.avg_intent_score }}%</div>
+                        <div class="sc-bar"><div class="sc-fill bg-violet" style="width: {{ report.avg_intent_score }}%"></div></div>
                     </div>
                 {% endif %}
             </div>
@@ -220,7 +306,7 @@
                 <div class="hm-row">
                     {% for page in report.pages %}
                         {% if page.visual_score is not none %}
-                            {% set page_avg = ((page.text_score + (page.visual_score )) / 2 * 100) | round(2) %}
+                            {% set page_avg = (((page.text_score * report.configuration.get('txt_weightage', 0.5)) + (page.visual_score * (1 - report.configuration.get('txt_weightage', 0.5)))) * 100) | round(2) %}
                         {% else %}
                             {% set page_avg = (page.text_score * 100) | round(2) %}
                         {% endif %}
@@ -243,11 +329,25 @@
                 <div class="card-icon">🔍</div>
                 <div>
                     <div class="card-title">Page-Wise Detail Analysis</div>
-                    <div class="card-sub">Deep dive into text and visual differences</div>
+                    <div class="card-sub">Deep dive into text, visual and semantic differences</div>
                 </div>
             </div>
+            <div class="card-arrow">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
         </div>
-        <div class="card-body vis">
+
+        <div class="card-body">
+            <div class="legend-bar">
+                <div class="li"><div class="ld" style="background:var(--white)"></div>Identical</div>
+                <div class="li"><div class="ld" style="background:var(--red);text-decoration:line-through"></div>Textual difference</div>
+                <div class="li"><div class="ld" style="background:var(--green)"></div>Textual difference</div>
+                <div class="li"><div class="ld" style="background:var(--amber);border:1px dashed var(--amber-border)"></div>Excluded (dynamic field)</div>
+                <div class="li"><div class="ld" style="background:var(--red);opacity: 0.3;"></div>Visual diff region</div>
+                <div class="li"><div class="ld" style="background:var(--violet)"></div>Semantic diff region <span class="info-icon" title="Highlighted in violet only when text differs literally but carries similar contextual meaning based on the semantic threshold.">i</span></div>
+            </div>
             {% for page in report.pages %}
             <div class="pg-section" id="pg-{{ loop.index }}">
                 <div class="pg-hdr" onclick="togglePage(this)">
@@ -261,17 +361,23 @@
                         {% if page.intent_score is not none %}
                             <span class="badge b-semantic">{{ (page.intent_score * 100) | round(2) }}% Semantic</span>
                         {% endif %}
-                    </div>
+                        </div>
+                        <div class="card-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 3 18 9"></polyline>
+                            </svg>
+                        </div>
+                    <!-- </div> -->
                 </div>
                 
                 <div class="pg-body">
                     <div class="tog-bar">
-                        <button class="tog-btn on" onclick="switchTab(this, 't{{loop.index}}')">Text Diff</button>
+                        <button class="tog-btn on" onclick="switchTab(this, 't{{loop.index}}')">Textual Difference</button>
                         {% if page.heatmap_base64 %}
                         <button class="tog-btn" onclick="switchTab(this, 'v{{loop.index}}')">Visual Heatmap</button>
                         {% endif %}
                         {% if page.semantic_diff_expected_html %}
-                        <button class="tog-btn" onclick="switchTab(this, 's{{loop.index}}')">Semantic Diff</button>
+                        <button class="tog-btn" onclick="switchTab(this, 's{{loop.index}}')">Semantic Difference</button>
                         {% endif %}
                     </div>
                     
@@ -291,8 +397,8 @@
                     {% if page.heatmap_base64 %}
                     <div id="v{{loop.index}}" class="diff-panel">
                         <div class="vpair">
-                            <div><div class="vcol-hd">Baseline</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.expected_image_base64 }}"></div></div>
-                            <div><div class="vcol-hd">Target</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.actual_image_base64 }}"></div></div>
+                            <div><div class="vcol-hd">Expected / Baseline document</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.expected_image_base64 }}"></div></div>
+                            <div><div class="vcol-hd">Actual / Target document</div><div class="pg-prev"><img src="data:image/png;base64,{{ page.actual_image_base64 }}"></div></div>
                             <div><div class="vcol-hd">Heatmap</div><div class="pg-prev heat-prev"><img src="data:image/png;base64,{{ page.heatmap_base64 }}"></div></div>
                         </div>
                     </div>
@@ -302,11 +408,12 @@
                     <div id="s{{loop.index}}" class="diff-panel">
                         <div class="text-comparison-container">
                             <div class="pane-column">
-                                <div class="pane-header" style="background: #f3e5f5;">Baseline (Semantic View)</div>
+                                <!-- <div class="pane-header" style="background: #f3e5f5;">Baseline (Semantic View)</div> -->
+                                <div class="pane-header" style="background: #ede7f6; color: #5e35b1; border-bottom: 1px solid #d1c4e9;">Expected / Base document (Semantic View)</div>
                                 <div class="pane-content">{{ page.semantic_diff_expected_html | safe }}</div>
                             </div>
                             <div class="pane-column">
-                                <div class="pane-header" style="background: #f3e5f5;">Target (Semantic View)</div>
+                                <div class="pane-header" style="background: #ede7f6; color: #5e35b1; border-bottom: 1px solid #d1c4e9;">Actual / Target document (Semantic View)</div>
                                 <div class="pane-content">{{ page.semantic_diff_actual_html | safe }}</div>
                             </div>
                         </div>
@@ -319,12 +426,23 @@
 
 <script>
     function toggleCard(hdr) {
-        hdr.nextElementSibling.classList.toggle('vis');
+    const card = hdr.closest('.card');
+        if (card) {
+            card.classList.toggle('expanded');
+            const body = card.querySelector('.card-body');
+            if (body) body.classList.toggle('vis');
+
+        }
     }
 
     function togglePage(hdr) {
-        hdr.nextElementSibling.classList.toggle('vis');
+        const section = hdr.closest('.pg-section');
+        const body = hdr.nextElementSibling; // This is the .pg-body
+
+        if (section) section.classList.toggle('expanded');
+        if (body) body.classList.toggle('vis');
     }
+
 
     function switchTab(btn, showId) {
         const parent = btn.parentElement;
@@ -345,9 +463,16 @@
     function jumpToPage(id) {
         const el = document.getElementById(id);
         if(el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Ensure the parent "Page-Wise Detail Analysis" card is expanded
+            const parentCard = el.closest('.card');
+            if (parentCard && !parentCard.classList.contains('expanded')) {
+                parentCard.classList.add('expanded');
+                parentCard.querySelector('.card-body').classList.add('vis');
+            }
+            // Expand the specific page body and scroll
             const pgBody = el.querySelector('.pg-body');
             if (pgBody) pgBody.classList.add('vis');
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
@@ -357,7 +482,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'Verisift_Report_{{ run_id }}.html';
+        a.download = 'Verisift_Report_{{ run_id }}_{{ timestamp }}.html';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
