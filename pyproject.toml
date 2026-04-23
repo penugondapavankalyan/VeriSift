@@ -28,5 +28,8 @@ nlp = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+verisift = ["templates/*.html"]
+
 [project.scripts]
-verisift = "verisift.cli:main" 
+verisift = "verisift.cli:main"
